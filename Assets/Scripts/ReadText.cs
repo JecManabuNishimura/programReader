@@ -10,6 +10,7 @@ public class ReadText : MonoBehaviour
     static string mold = "";
     static string valName = "";
     static string value = "";
+    static string funcName = "";
 
     static string leftValname = "";                     // 左辺変数
 
@@ -28,6 +29,7 @@ public class ReadText : MonoBehaviour
     static int ifnestLevel = 0;
     static int allNestLevel = 0;
     static int skipNestLevel = -1;
+    static int funcNestLevel = 0;
 
     struct SCOOP_NUM
 	{
@@ -173,10 +175,16 @@ public class ReadText : MonoBehaviour
                                 DataTable.VARIABLE_DATA ValData;
                                 ValData.name = valName == "" ? leftValname : valName;
                                 ValData.mold = mold;
+                                // 変数のチェック
                                 if (CheckVarialbleData(ValData.name))
                                 {
                                     DataTable.SetVarialbleData(ValData.name, value);
                                 }
+                                // 引数のチェック
+                                else if (DataTable.SetFuncVarialbleData(funcName, ValData.name, value))
+								{
+                                    // 定義されていない変数に代入しようとしている
+								}
                             }
 						}
                         ResetData();
@@ -213,6 +221,9 @@ public class ReadText : MonoBehaviour
                             // 関数になるので、変数名から変更
                             fncData.returnName = mold;
                             fncData.name = valName;
+                            funcName = valName;
+                            // 関数が始まった時のネストを代入
+                            funcNestLevel = allNestLevel;
                             valName = "";
                             mold = "";
                         }
@@ -232,7 +243,6 @@ public class ReadText : MonoBehaviour
 
                             if (bracketsCount == 0)
 							{
-                                
                                 // if文のチェック
                                 ifCheckFlag = ifcheck.CheckConditions(substList);
                                 if(!ifCheckFlag)
@@ -245,7 +255,6 @@ public class ReadText : MonoBehaviour
                                     skipFlag = false;
 
                                 }
-
                             }
                         }
                         break;
@@ -253,6 +262,11 @@ public class ReadText : MonoBehaviour
                         allNestLevel--;
                         skipNestLevel = -1;
                         bracketsEndFlag = true;
+                        // 関数から抜けた場合
+                        if(funcNestLevel == allNestLevel)
+						{
+                            funcName = "";
+						}
                         ScoopPop();
                         break;
                     case '=':
@@ -284,7 +298,6 @@ public class ReadText : MonoBehaviour
                         break;
                 }
             }
-
         }
         else
 		{
@@ -301,7 +314,8 @@ public class ReadText : MonoBehaviour
             // 予約語チェック
             if(CheckReservedWord(newSyntax))
 			{
-                switch(newSyntax)
+				#region 予約語処理
+				switch (newSyntax)
 				{
                     case "if":
                         ifFlag = true;
@@ -317,7 +331,6 @@ public class ReadText : MonoBehaviour
 							{
                                 skipNestLevel = -1;
                                 skipFlag = false;
-
                             }
                             else
 							{
@@ -337,9 +350,10 @@ public class ReadText : MonoBehaviour
                     case "while":
                         break;
                 }
+				#endregion
 			}
-            // 関数引数
-            else if (argumentFlag)
+			// 関数引数
+			else if (argumentFlag)
             {
                 #region 関数の引数処理
 
@@ -380,7 +394,6 @@ public class ReadText : MonoBehaviour
             else if(substitutionFlag || ifFlag)
 			{
                 substList.Add(newSyntax);
-
             }
             else if (mold == "" && fncData.returnName == null)
             {
@@ -433,7 +446,6 @@ public class ReadText : MonoBehaviour
 
             bracketsEndFlag = false;
         }
-        
     }
     
     static bool CheckReservedWord(string tex)
@@ -452,7 +464,6 @@ public class ReadText : MonoBehaviour
 
     static void ScoopPush(int line)
 	{
-
         SCOOP_NUM sn;
         sn.number = allNestLevel;
         sn.line = line;
@@ -511,7 +522,7 @@ public class ReadText : MonoBehaviour
                     {
                         foreach (var n in data.getVariable)
                         {
-                            sfd.SetValText(n.mold, n.name);
+                            sfd.SetValText(n.mold, n.name,n.value);
                         }
                     }
                     obj.transform.parent = tmpfunTable.transform;
@@ -537,6 +548,23 @@ public class ReadText : MonoBehaviour
 		}
         return false;
 	}
+    static bool CheckFunctionVarialbleData(string funcName,string val)
+    {
+        foreach (var data in DataTable.GetFunctionDataLIst())
+        {
+            if (data.name == funcName)
+            {
+                foreach(var valData in data.getVariable)
+				{
+                    if(valData.name == val)
+					{
+                        return true;
+					}
+				}
+            }
+        }
+        return false;
+    }
 
     static bool SymbolCheck(string tex)
     {

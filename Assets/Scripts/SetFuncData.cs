@@ -27,11 +27,12 @@ public class SetFuncData : MonoBehaviour
         FuncNameText.text = tex;
     }
 
-    public void SetValText(string mol,string valName)
+    public void SetValText(string mol,string valName,string value)
 	{
         var obj = Instantiate(svd);
         obj.GetComponent<SetVariData>().SetMolText(mol);
         obj.GetComponent<SetVariData>().SetValNameText(valName);
+        obj.GetComponent<SetVariData>().SetValueText(value);
         obj.transform.parent = variTable.transform;
     }
 }

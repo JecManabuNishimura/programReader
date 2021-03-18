@@ -76,6 +76,27 @@ public class DataTable : MonoBehaviour
 		return false;
 	}
 
+	public static bool SetFuncVarialbleData(string funcName,string valName,string value)
+	{
+		for(int i = 0; i < function.Count; i++)
+		{
+			if(function[i].name == funcName)
+			{
+				for(int y = 0; y < function[i].getVariable.Count; y++)
+				{
+					if(function[i].getVariable[y].name == valName)
+					{
+						VARIABLE_DATA vd = function[i].getVariable[y];
+						vd.value = value;
+						function[i].getVariable[y] = vd;
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	public static int GetVariableNum()
 	{
 		return variable.Count;
