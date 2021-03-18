@@ -22,14 +22,21 @@ public class ReadText : MonoBehaviour
     static bool skipFlag = false;                   // スキップフラグ
     static bool forFlag = false;                    // for文フラグ
 
+
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
+    static public bool nextLoopFlag;                // for文最後の処理フラグ
 
     static int bracketsCount = 0;
+    static int forCounter = 0;
 
     static int ifnestLevel = 0;
     static int allNestLevel = 0;
     static int skipNestLevel = -1;
     static int funcNestLevel = 0;
+    static Stack<int> loopNestLevel = new Stack<int>();
+
+    
+    static public LOOP_TYPE loopType = LOOP_TYPE.NONE;
 
     struct SCOOP_NUM
 	{
@@ -44,13 +51,25 @@ public class ReadText : MonoBehaviour
         SMALL
 	}
 
+    public enum LOOP_TYPE
+	{
+        NONE,
+        DEF,
+        INIT,
+        TERM,
+        NEXT,
+        PROCESSING,
+        BEGIN_PROCESSING,
+        END,
+	}
+
     static IF_TYPE ifType;
 
     static Stack<SCOOP_NUM> stack = new Stack<SCOOP_NUM>();
     static Stack<int> nestStack = new Stack<int>();
 
     static List<string> substList = new List<string>();
-    static int nowIndex = 0;
+
     //----------デバッグ用--------------------------------------------------
     [SerializeField]
     GameObject variableTable;
@@ -104,7 +123,9 @@ public class ReadText : MonoBehaviour
         "|","]","+",
     };
 
-    static void ResetData()
+
+
+	static void ResetData()
 	{
         fncData = new DataTable.FUNC_DATA();
         fncData.getVariable = new List<DataTable.VARIABLE_DATA>();
@@ -117,7 +138,6 @@ public class ReadText : MonoBehaviour
         ifFlag = false;
         substList.Clear();
         value = "";
-        nowIndex = 0;
         bracketsCount = 0;
     }
 
@@ -127,10 +147,13 @@ public class ReadText : MonoBehaviour
         ResetData();
 	}
 
-    static public void GetText(string uiText,int line)
+    static public void GetText(string uiText,int line,int cursorIndex)
 	{
         string newSyntax = uiText.TrimEnd(' ');
-        if(newSyntax == "\n" || newSyntax == "")
+        
+        nextLoopFlag = false;
+
+        if (newSyntax == "\n" || newSyntax == "")
 		{
             return;
 		}
@@ -149,6 +172,7 @@ public class ReadText : MonoBehaviour
                 switch (newSyntax[i])
                 {
                     case ';':
+
                         // 代入チェック
                         if (substitutionFlag)
 						{
@@ -187,13 +211,44 @@ public class ReadText : MonoBehaviour
 								}
                             }
 						}
+                        // for文チェック
+                        if (forFlag && ifFlag)
+                        {
+                            if (ifcheck.CheckConditions(substList))
+                            {
+                                nextLoopFlag = true;
+                            }
+                            else
+                            {
+                                skipFlag = true;
+                                skipNestLevel = allNestLevel;
+                            }
+                        }
+                        // リセット後にifフラグをtrueにする
+                        else if (forFlag)
+                        {
+                            nextLoopFlag = true;
+                            if (forCounter == 0)
+                                ifFlag = true;
+                            forCounter++;
+                            substList.Clear();
+                            // ifFlagをONのままにしたいため、ResetDataに入らないようにする
+                            break;
+                        }
+
                         ResetData();
+
                         break;
                     case '{':
                         allNestLevel++;
                         ifFlag = false;
+                        
                         ScoopPush(line);
 
+                        if(forFlag)
+						{
+                            nextLoopFlag = true;
+						}
                         if(ifCheckFlag)
 						{
                             // if文でtrueになった場合の処理を書く
@@ -211,6 +266,10 @@ public class ReadText : MonoBehaviour
 
                         break;
                     case '(':
+                        if(forFlag)
+						{
+                            nextLoopFlag = true;
+						}
                         if (mold != "" && valName != "")
                         {
                             if (newSyntax.IndexOf("(") >= 0)
@@ -237,7 +296,50 @@ public class ReadText : MonoBehaviour
                         argumentFlag = false;
                         bracketsCount--;
 
-                        if (substitutionFlag || ifFlag)
+                        // for 文の場合
+                        if(forFlag)
+						{
+                            nextLoopFlag = true;
+                            // 代入チェック
+                            if (substitutionFlag)
+                            {
+                                value = arithmeticCheck.Check(substList);
+                            }
+                            // 変数宣言の場合
+                            if (((valName != "") || (leftValname != "")) && mold != "")
+                            {
+                                DataTable.VARIABLE_DATA ValData;
+                                ValData.name = valName == "" ? leftValname : valName;
+                                ValData.mold = mold;
+                                if (value == "")
+                                {
+                                    // 暫定設定
+                                    value = "0";
+                                }
+                                ValData.value = value;
+                                DataTable.AddVariableData(ValData);
+                            }
+                            else
+                            {
+                                if (((valName != "") || (leftValname != "")))
+                                {
+                                    DataTable.VARIABLE_DATA ValData;
+                                    ValData.name = valName == "" ? leftValname : valName;
+                                    ValData.mold = mold;
+                                    // 変数のチェック
+                                    if (CheckVarialbleData(ValData.name))
+                                    {
+                                        DataTable.SetVarialbleData(ValData.name, value);
+                                    }
+                                    // 引数のチェック
+                                    else if (DataTable.SetFuncVarialbleData(funcName, ValData.name, value))
+                                    {
+                                        // 定義されていない変数に代入しようとしている
+                                    }
+                                }
+                            }
+                        }
+                        else if (substitutionFlag || ifFlag)
                         {
                             substList.Add(newSyntax[i].ToString());
 
@@ -262,8 +364,14 @@ public class ReadText : MonoBehaviour
                         allNestLevel--;
                         skipNestLevel = -1;
                         bracketsEndFlag = true;
+                        
+                        // ループネストが終了した場合
+                        if(loopNestLevel.Peek() == allNestLevel)
+						{
+                            nextLoopFlag = true;
+                        }
                         // 関数から抜けた場合
-                        if(funcNestLevel == allNestLevel)
+                        else if(funcNestLevel == allNestLevel)
 						{
                             funcName = "";
 						}
@@ -346,6 +454,10 @@ public class ReadText : MonoBehaviour
 						}
                         break;
                     case "for":
+                        forCounter = 0;
+                        forFlag = true;
+                        // 自身のネストを保存する
+                        loopNestLevel.Push(allNestLevel);
                         break;
                     case "while":
                         break;
@@ -575,5 +687,7 @@ public class ReadText : MonoBehaviour
         }
         return false;
     }
+
+
 
 }
