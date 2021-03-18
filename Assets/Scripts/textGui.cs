@@ -235,7 +235,7 @@ public class textGui : MonoBehaviour
 
 	void ReadTextData(TextEditor te, Event ev)//, ref string code)
 	{
-		ReadText.ResetData();
+		ReadText.InitializeData();
 
 		// •Ï”ˆê——íœ
 		DataTable.CrearData();
