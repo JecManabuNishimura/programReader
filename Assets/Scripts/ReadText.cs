@@ -297,11 +297,14 @@ public class ReadText : MonoBehaviour
                         allNestLevel--;
                         skipNestLevel = -1;
                         bracketsEndFlag = true;
-                        
+
                         // ループネストが終了した場合
-                        if(loopNestLevel.Peek() == allNestLevel)
-						{
-                            nextLoopFlag = true;
+                        if (forFlag)
+                        {
+                            if (loopNestLevel.Peek() == allNestLevel)
+                            {
+                                nextLoopFlag = true;
+                            }
                         }
                         // 関数から抜けた場合
                         else if(funcNestLevel == allNestLevel)
@@ -335,6 +338,8 @@ public class ReadText : MonoBehaviour
                     case '!':
                     case '|':
                     case '&':
+                    case '<':
+                    case '>':
                         substList.Add(newSyntax[i].ToString());
                         break;
                 }

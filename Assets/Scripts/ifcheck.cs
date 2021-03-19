@@ -28,19 +28,44 @@ public class ifcheck : MonoBehaviour
         if (substList[nowIndex] == "!" && substList[nowIndex + 1] == "=")
         {
             nowIndex += 2;
-            if (left == conc2())
+            if (left != conc2())
             {
-                res = false;
+                res = true;
             }
             else
             {
-                res = true;
+                res = false;
             }
         }
         else if (substList[nowIndex] == "=" && substList[nowIndex + 1] == "=")
         {
             nowIndex += 2;
             if (left == conc2())
+            {
+                res = true;
+            }
+            else
+            {
+                res = false;
+            }
+        }
+
+        else if (substList[nowIndex] == "<" && substList[nowIndex + 1] == "=")
+        {
+            nowIndex += 2;
+            if (int.Parse(left) <= int.Parse(conc2()))
+            {
+                res = true;
+            }
+            else
+            {
+                res = false;
+            }
+        }
+        else if (substList[nowIndex] == ">" && substList[nowIndex + 1] == "=")
+        {
+            nowIndex += 2;
+            if (int.Parse(left) >= int.Parse(conc2()))
             {
                 res = true;
             }
