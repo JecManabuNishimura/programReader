@@ -8,10 +8,7 @@ using UnityEngine.UI;
 public class ReadText : MonoBehaviour
 {
     static string mold = "";
-    static string valName = "";
-    static string value = "";
     static string funcName = "";
-
     static string leftValname = "";                     // 左辺変数
 
     static bool argumentFlag = false;               // 引数フラグ
@@ -131,13 +128,11 @@ public class ReadText : MonoBehaviour
         fncData.getVariable = new List<DataTable.VARIABLE_DATA>();
         argumentFlag = false;
          mold = "";
-        valName = "";
         argumentCanmaFlag = true;
         leftValname = "";
         substitutionFlag = false;
         ifFlag = false;
         substList.Clear();
-        value = "";
         bracketsCount = 0;
     }
 
@@ -172,9 +167,13 @@ public class ReadText : MonoBehaviour
                 switch (newSyntax[i])
                 {
                     case ';':
-
+                        // 変数宣言
+                        if (!CheckVarialbleData(leftValname))
+						{
+                            VariableDeclaration(leftValname, mold);
+                        }
                         // 代入処理
-                        Substitution(substList);
+                        Substitution(substList,leftValname);
 
                         // for文チェック
                         if (forFlag && ifFlag)
@@ -235,7 +234,7 @@ public class ReadText : MonoBehaviour
 						{
                             nextLoopFlag = true;
 						}
-                        if (mold != "" && valName != "")
+                        if (mold != "" && leftValname != "")
                         {
                             if (newSyntax.IndexOf("(") >= 0)
                             {
@@ -244,11 +243,11 @@ public class ReadText : MonoBehaviour
                             }
                             // 関数になるので、変数名から変更
                             fncData.returnName = mold;
-                            fncData.name = valName;
-                            funcName = valName;
+                            fncData.name = leftValname;
+                            funcName = leftValname;
                             // 関数が始まった時のネストを代入
                             funcNestLevel = allNestLevel;
-                            valName = "";
+                            leftValname = "";
                             mold = "";
                         }
                         if (substitutionFlag || ifFlag)
@@ -270,7 +269,7 @@ public class ReadText : MonoBehaviour
                                 forCounter++;
                             }
                             // 代入処理
-                            Substitution(substList);
+                            Substitution(substList,leftValname);
                         }
                         else if (substitutionFlag || ifFlag)
                         {
@@ -315,12 +314,7 @@ public class ReadText : MonoBehaviour
                         break;
                     case '=':
                         substitutionFlag = true;
-                        if (valName != "")
-                        {
-                            // 左辺の値とする
-                            leftValname = valName;
-                            valName = "";
-                        }
+
                         if(ifFlag)
 						{
                             substList.Add(newSyntax[i].ToString());
@@ -341,10 +335,16 @@ public class ReadText : MonoBehaviour
                                 var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
 
                                 tmp.Add(name); tmp.Add("+"); tmp.Add("1");
-                                substitutionFlag = true;
-                                Substitution(tmp);
-                                substitutionFlag = false;
-
+                                if (substitutionFlag ==false)
+								{
+                                    substitutionFlag = true;
+                                    Substitution(tmp, name);
+                                    substitutionFlag = false;
+                                }
+                                else
+								{
+                                    Substitution(tmp, name);
+                                }
                                 if(substList.Count >= 2)
 								{
                                     substList.RemoveAt(substList.Count - 1);
@@ -359,6 +359,38 @@ public class ReadText : MonoBehaviour
                         substList.Add(newSyntax[i].ToString());
                         break;
                     case '-':
+                        if (substList.Count >= 1)
+                        {
+                            // インクリメント対応
+                            if (substList[substList.Count - 1] == "-")
+                            {
+                                List<string> tmp = new List<string>();
+                                var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
+
+                                tmp.Add(name); tmp.Add("-"); tmp.Add("1");
+                                if (substitutionFlag == false)
+                                {
+                                    substitutionFlag = true;
+                                    Substitution(tmp, name);
+                                    substitutionFlag = false;
+                                }
+                                else
+                                {
+                                    Substitution(tmp, name);
+                                }
+                                if (substList.Count >= 2)
+                                {
+                                    substList.RemoveAt(substList.Count - 1);
+                                }
+                                else
+                                {
+                                    substList[substList.Count - 1] = name;
+                                }
+                                break;
+                            }
+                        }
+                        substList.Add(newSyntax[i].ToString());
+                        break;
                     case '*':
                     case '/':
                     case '!':
@@ -457,7 +489,7 @@ public class ReadText : MonoBehaviour
                         DataTable.VARIABLE_DATA vd;
                         vd.name = newSyntax;
                         vd.mold = mold;
-                        vd.value = value;
+                        vd.value = "0";
 
                         mold = "";
                         fncData.getVariable.Add(vd);
@@ -485,32 +517,24 @@ public class ReadText : MonoBehaviour
                 }
 
                 // 変数名が設定されていない場合
-                if (valName == "")
+                if (leftValname == "")
                 {
                     // すでに変数宣言がされているのか
-                    if (CheckVarialbleData(newSyntax))
+                    //if (CheckVarialbleData(newSyntax))
                     {
                         leftValname = newSyntax;
-                    }
-                    else
-                    {
-                        valName = newSyntax;
                     }
                 }
             }
             else
 			{
                 // 変数名が設定されていない場合
-                if (valName == "")
+                if (leftValname == "")
                 {
                     // すでに変数宣言がされているのか
-                    if (CheckVarialbleData(newSyntax))
+                    //if (CheckVarialbleData(newSyntax))
                     {
                         leftValname = newSyntax;
-                    }
-                    else
-                    {
-                        valName = newSyntax;
                     }
                 }
             }
@@ -537,44 +561,31 @@ public class ReadText : MonoBehaviour
         return false;
     }
     
-    static void Substitution(List<string> list)
+    // 変数宣言
+    static void VariableDeclaration(string name,string setMold)
+	{
+        DataTable.VARIABLE_DATA ValData;
+        ValData.name = name;
+        ValData.mold = setMold;
+        ValData.value = "0";
+        DataTable.AddVariableData(ValData);
+    }
+    static void Substitution(List<string> list,string subName)
 	{
         // 代入チェック
         if (substitutionFlag)
         {
-            value = arithmeticCheck.Check(list);
-        }
-        // 変数宣言の場合
-        if (((valName != "") || (leftValname != "")) && mold != "")
-        {
-            DataTable.VARIABLE_DATA ValData;
-            ValData.name = valName == "" ? leftValname : valName;
-            ValData.mold = mold;
-            if (value == "")
+            var val = arithmeticCheck.Check(list);
+            // 変数名チェック
+            if (CheckVarialbleData(subName))
             {
-                // 暫定設定
-                value = "0";
+                DataTable.SetVarialbleData(subName, val);
             }
-            ValData.value = value;
-            DataTable.AddVariableData(ValData);
-        }
-        else
-        {
-            if (((valName != "") || (leftValname != "")))
+            // 引数のチェック
+            else if (DataTable.SetFuncVarialbleData(funcName, subName, val))
             {
-                DataTable.VARIABLE_DATA ValData;
-                ValData.name = valName == "" ? leftValname : valName;
-                ValData.mold = mold;
-                // 変数のチェック
-                if (CheckVarialbleData(ValData.name))
-                {
-                    DataTable.SetVarialbleData(ValData.name, value);
-                }
-                // 引数のチェック
-                else if (DataTable.SetFuncVarialbleData(funcName, ValData.name, value))
-                {
-                    // 定義されていない変数に代入しようとしている
-                }
+                // 定義されていない変数に代入しようとしている
+
             }
         }
     }
@@ -648,11 +659,6 @@ public class ReadText : MonoBehaviour
 			}
         }
 		#endregion
-	}
-	static public void NextWord()
-	{
-        mold = "";
-        valName = "";
 	}
 
     static bool CheckVarialbleData(string val)
