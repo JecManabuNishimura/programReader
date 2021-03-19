@@ -289,70 +289,34 @@ public class textGui : MonoBehaviour
 			}
 
 			// ÉãÅ[ÉvëŒâû
-			/*
-			switch (ReadText.loopType)
-			{
-				case ReadText.LOOP_TYPE.INIT:
-					li.endIndex = 0;
-					li.nextIndex = 0;
-					li.termIndex = 0;
-					break;
-				case ReadText.LOOP_TYPE.TERM:
-
-					li.termIndex = te.cursorIndex;
-					break;
-				case ReadText.LOOP_TYPE.NEXT:
-					li.nextIndex = te.cursorIndex;
-					break;
-				case ReadText.LOOP_TYPE.PROCESSING:
-					if (!loopIndex.Contains(li))
-					{
-						li.startIndex = te.cursorIndex;
-						loopIndex.Push(li);
-					}
-					break;
-				case ReadText.LOOP_TYPE.BEGIN_PROCESSING:
-					
-					break;
-				case ReadText.LOOP_TYPE.END:
-					LOOP_INDEX tmpli = loopIndex.Peek();
-					// èIóπÇ™åàÇ‹Ç¡ÇƒÇ¢Ç»Ç¢Ç∆Ç´
-					if (tmpli.endIndex == 0)
-					{
-						loopIndex.Pop();
-						tmpli.endIndex = te.cursorIndex;
-						loopIndex.Push(tmpli);
-					}
-					break;
-			}*/
-
 			if(ReadText.nextLoopFlag)
 			{
-				
+
 				switch (loopStepNumber)
 				{
 					case LOOP_NUMBER.NONE:
-						loopStepNumber++;
-						break;
-					case LOOP_NUMBER.INIT:
 						li.endIndex = 0;
 						li.nextIndex = 0;
 						li.termIndex = 0;
 						loopStepNumber++;
 						break;
+					case LOOP_NUMBER.INIT:
+						li.termIndex = te.cursorIndex;
+						loopStepNumber++;
+						break;
 					case LOOP_NUMBER.TERM:
-						if(li.termIndex == 0)
+						if(li.nextIndex == 0)
 						{
-							li.termIndex = te.cursorIndex;
-							loopStepNumber = LOOP_NUMBER.NEXT;
+							li.nextIndex = te.cursorIndex;
+							loopStepNumber = LOOP_NUMBER.PROCESSING;
 						}
 						else
 						{
 							te.selectIndex = te.cursorIndex = loopIndex.Peek().termIndex;
+							loopStepNumber++;
 						}
 						break;
 					
-
 					case LOOP_NUMBER.PROCESSING:
 						if(li.startIndex == 0)
 						{
@@ -368,17 +332,8 @@ public class textGui : MonoBehaviour
 						
 						break;
 					case LOOP_NUMBER.NEXT:
-						if (li.nextIndex == 0)
-						{
-							li.nextIndex = te.cursorIndex;
-							loopStepNumber = LOOP_NUMBER.PROCESSING;
-						}
-						else
-						{
-							te.selectIndex = te.cursorIndex = loopIndex.Peek().nextIndex;
-							loopStepNumber = LOOP_NUMBER.TERM;
-						}
-
+						te.selectIndex = te.cursorIndex = loopIndex.Peek().nextIndex;
+						loopStepNumber = LOOP_NUMBER.TERM;
 						break;
 					case LOOP_NUMBER.END:
 						break;

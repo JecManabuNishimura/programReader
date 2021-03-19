@@ -173,44 +173,9 @@ public class ReadText : MonoBehaviour
                 {
                     case ';':
 
-                        // 代入チェック
-                        if (substitutionFlag)
-						{
-                            value = arithmeticCheck.Check(substList);
-                        }
-                        // 変数宣言の場合
-                        if (((valName != "") || (leftValname != "")) && mold != "")
-                        {
-                            DataTable.VARIABLE_DATA ValData;
-                            ValData.name = valName == "" ? leftValname : valName;
-                            ValData.mold = mold;
-                            if (value == "")
-                            {
-                                // 暫定設定
-                                value = "0";
-                            }
-                            ValData.value = value;
-                            DataTable.AddVariableData(ValData);
-                        }
-                        else
-						{
-                            if(((valName != "") || (leftValname != "")))
-							{
-                                DataTable.VARIABLE_DATA ValData;
-                                ValData.name = valName == "" ? leftValname : valName;
-                                ValData.mold = mold;
-                                // 変数のチェック
-                                if (CheckVarialbleData(ValData.name))
-                                {
-                                    DataTable.SetVarialbleData(ValData.name, value);
-                                }
-                                // 引数のチェック
-                                else if (DataTable.SetFuncVarialbleData(funcName, ValData.name, value))
-								{
-                                    // 定義されていない変数に代入しようとしている
-								}
-                            }
-						}
+                        // 代入処理
+                        Substitution();
+
                         // for文チェック
                         if (forFlag && ifFlag)
                         {
@@ -299,45 +264,13 @@ public class ReadText : MonoBehaviour
                         // for 文の場合
                         if(forFlag)
 						{
-                            nextLoopFlag = true;
-                            // 代入チェック
-                            if (substitutionFlag)
-                            {
-                                value = arithmeticCheck.Check(substList);
+                            if(forCounter != 1)         // 無理やりスキップ
+							{
+                                nextLoopFlag = true;
+                                forCounter++;
                             }
-                            // 変数宣言の場合
-                            if (((valName != "") || (leftValname != "")) && mold != "")
-                            {
-                                DataTable.VARIABLE_DATA ValData;
-                                ValData.name = valName == "" ? leftValname : valName;
-                                ValData.mold = mold;
-                                if (value == "")
-                                {
-                                    // 暫定設定
-                                    value = "0";
-                                }
-                                ValData.value = value;
-                                DataTable.AddVariableData(ValData);
-                            }
-                            else
-                            {
-                                if (((valName != "") || (leftValname != "")))
-                                {
-                                    DataTable.VARIABLE_DATA ValData;
-                                    ValData.name = valName == "" ? leftValname : valName;
-                                    ValData.mold = mold;
-                                    // 変数のチェック
-                                    if (CheckVarialbleData(ValData.name))
-                                    {
-                                        DataTable.SetVarialbleData(ValData.name, value);
-                                    }
-                                    // 引数のチェック
-                                    else if (DataTable.SetFuncVarialbleData(funcName, ValData.name, value))
-                                    {
-                                        // 定義されていない変数に代入しようとしている
-                                    }
-                                }
-                            }
+                            // 代入処理
+                            Substitution();
                         }
                         else if (substitutionFlag || ifFlag)
                         {
@@ -572,6 +505,47 @@ public class ReadText : MonoBehaviour
         return false;
     }
     
+    static void Substitution()
+	{
+        // 代入チェック
+        if (substitutionFlag)
+        {
+            value = arithmeticCheck.Check(substList);
+        }
+        // 変数宣言の場合
+        if (((valName != "") || (leftValname != "")) && mold != "")
+        {
+            DataTable.VARIABLE_DATA ValData;
+            ValData.name = valName == "" ? leftValname : valName;
+            ValData.mold = mold;
+            if (value == "")
+            {
+                // 暫定設定
+                value = "0";
+            }
+            ValData.value = value;
+            DataTable.AddVariableData(ValData);
+        }
+        else
+        {
+            if (((valName != "") || (leftValname != "")))
+            {
+                DataTable.VARIABLE_DATA ValData;
+                ValData.name = valName == "" ? leftValname : valName;
+                ValData.mold = mold;
+                // 変数のチェック
+                if (CheckVarialbleData(ValData.name))
+                {
+                    DataTable.SetVarialbleData(ValData.name, value);
+                }
+                // 引数のチェック
+                else if (DataTable.SetFuncVarialbleData(funcName, ValData.name, value))
+                {
+                    // 定義されていない変数に代入しようとしている
+                }
+            }
+        }
+    }
 
 
     static void ScoopPush(int line)
