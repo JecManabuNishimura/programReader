@@ -74,6 +74,30 @@ public class ifcheck : MonoBehaviour
                 res = false;
             }
         }
+        else if (substList[nowIndex] == ">" )
+        {
+            nowIndex += 1;
+            if (int.Parse(left) > int.Parse(conc2()))
+            {
+                res = true;
+            }
+            else
+            {
+                res = false;
+            }
+        }
+        else if (substList[nowIndex] == "<")
+        {
+            nowIndex += 1;
+            if (int.Parse(left) < int.Parse(conc2()))
+            {
+                res = true;
+            }
+            else
+            {
+                res = false;
+            }
+        }
 
         return res;
     }
