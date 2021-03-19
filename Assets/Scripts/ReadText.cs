@@ -174,7 +174,7 @@ public class ReadText : MonoBehaviour
                     case ';':
 
                         // 代入処理
-                        Substitution();
+                        Substitution(substList);
 
                         // for文チェック
                         if (forFlag && ifFlag)
@@ -270,7 +270,7 @@ public class ReadText : MonoBehaviour
                                 forCounter++;
                             }
                             // 代入処理
-                            Substitution();
+                            Substitution(substList);
                         }
                         else if (substitutionFlag || ifFlag)
                         {
@@ -332,6 +332,32 @@ public class ReadText : MonoBehaviour
                         break;
 
                     case '+':
+                        if (substList.Count >= 1)
+                        {
+                            // インクリメント対応
+                            if (substList[substList.Count - 1] == "+")
+                            {
+                                List<string> tmp = new List<string>();
+                                var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
+
+                                tmp.Add(name); tmp.Add("+"); tmp.Add("1");
+                                substitutionFlag = true;
+                                Substitution(tmp);
+                                substitutionFlag = false;
+
+                                if(substList.Count >= 2)
+								{
+                                    substList.RemoveAt(substList.Count - 1);
+								}
+                                else
+								{
+                                    substList[substList.Count - 1] = name;
+                                }
+                                break;
+                            }
+                        }
+                        substList.Add(newSyntax[i].ToString());
+                        break;
                     case '-':
                     case '*':
                     case '/':
@@ -341,6 +367,7 @@ public class ReadText : MonoBehaviour
                     case '<':
                     case '>':
                         substList.Add(newSyntax[i].ToString());
+                        
                         break;
                 }
             }
@@ -510,12 +537,12 @@ public class ReadText : MonoBehaviour
         return false;
     }
     
-    static void Substitution()
+    static void Substitution(List<string> list)
 	{
         // 代入チェック
         if (substitutionFlag)
         {
-            value = arithmeticCheck.Check(substList);
+            value = arithmeticCheck.Check(list);
         }
         // 変数宣言の場合
         if (((valName != "") || (leftValname != "")) && mold != "")
