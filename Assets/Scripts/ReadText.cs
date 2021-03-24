@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-public class ReadText : MonoBehaviour
+public partial class ReadText : MonoBehaviour
 {
     static string mold = "";
     static string funcName = "";
@@ -201,33 +201,7 @@ public class ReadText : MonoBehaviour
                         ResetData();
 
                         break;
-                    case '{':
-                        allNestLevel++;
-                        ifFlag = false;
-                        
-                        ScoopPush(line);
-
-                        if(forFlag)
-						{
-                            nextLoopFlag = true;
-                            forFlag = false;
-						}
-                        if(ifCheckFlag)
-						{
-                            // if文でtrueになった場合の処理を書く
-                            
-                        }
-                        // 関数定義
-                        if (fncData.name != "" && fncData.name != null)
-                        {
-                            // 行数
-                            fncData.begin = line;
-                            // 関数登録
-                            DataTable.AddFuncData(fncData);
-                        }
-                        ResetData();
-
-                        break;
+                   
                     case '(':
                         if(forFlag)
 						{
@@ -274,7 +248,7 @@ public class ReadText : MonoBehaviour
                         {
                             substList.Add(newSyntax[i].ToString());
 
-                            if (bracketsCount == 0)
+                            if (bracketsCount == 0 && ifFlag)
 							{
                                 // if文のチェック
                                 ifCheckFlag = ifcheck.CheckConditions(substList);
@@ -289,16 +263,45 @@ public class ReadText : MonoBehaviour
 
                                 }
                             }
+                            break;
+                        }
+                        // 関数定義
+                        else if (fncData.name != "" && fncData.name != null)
+                        {
+                            // 行数
+                            fncData.begin = line;
+                            // 関数登録
+                            DataTable.AddFuncData(fncData);
                         }
                         ResetData();
+                        break;
+                    case '{':
+                        allNestLevel++;
+                        ifFlag = false;
+
+                        ScoopPush(line);
+
+                        if (forFlag)
+                        {
+                            nextLoopFlag = true;
+                            forFlag = false;
+                        }
+                        if (ifCheckFlag)
+                        {
+                            // if文でtrueになった場合の処理を書く
+
+                        }
+                        ResetData();
+
                         break;
                     case '}':
                         allNestLevel--;
                         skipNestLevel = -1;
                         bracketsEndFlag = true;
+                        DataTable.DeleteVariableScoopData(allNestLevel);
 
                         // ループネストが終了した場合
-                        if(loopNestLevel.Count != 0)
+                        if (loopNestLevel.Count != 0)
 						{
                             if (loopNestLevel.Peek() == allNestLevel)
                             {
@@ -314,6 +317,16 @@ public class ReadText : MonoBehaviour
                         ScoopPop();
                         break;
                     case '=':
+                        if (skipFlag && skipNestLevel != -1)
+                        {
+                            // スキップされる行数を越した場合
+                            if (skipNestLevel >= allNestLevel)
+                            {
+                                skipNestLevel = -1;
+                            }
+
+                            return;
+                        }
                         substitutionFlag = true;
 
                         if((ifFlag) || (forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM))
@@ -366,7 +379,7 @@ public class ReadText : MonoBehaviour
                         break;
                     case '-':
                         if ((forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
-                            (!forFlag))
+                            (!forFlag) && !skipFlag)
                         {
                             if (substList.Count >= 1)
                             {
@@ -499,6 +512,7 @@ public class ReadText : MonoBehaviour
                         vd.name = newSyntax;
                         vd.mold = mold;
                         vd.value = "0";
+                        vd.scoopNum = allNestLevel;
 
                         mold = "";
                         fncData.getVariable.Add(vd);
@@ -584,9 +598,22 @@ public class ReadText : MonoBehaviour
             ValData.name = name;
             ValData.mold = setMold;
             ValData.value = "0";
+            ValData.scoopNum = allNestLevel;
             DataTable.AddVariableData(ValData);
         }
         
+    }
+
+    static void CheckVariableIsScoop(string name,int scoop)
+	{
+        // こういった消し方もある（勉強用）
+        foreach (var (data,index) in DataTable.GetVarialbleDataList().Indexed())
+		{
+            if(data.scoopNum > scoop)
+			{
+                DataTable.DeleteVariableData(index);
+            }
+		}
     }
     static void Substitution(List<string> list,string subName)
 	{
@@ -721,3 +748,5 @@ public class ReadText : MonoBehaviour
 
 
 }
+
+

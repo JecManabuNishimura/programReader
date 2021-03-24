@@ -19,19 +19,24 @@ public class arithmeticCheck : MonoBehaviour
     static int eval1()
     {
         int value = eval2();
-        if (nowIndex == substList.Count)
-        {
-            return value;
-        }
-        if (substList[nowIndex] == "+")
-        {
-            nowIndex++;
-            value += eval2();
-        }
-        else if (substList[nowIndex] == "-")
-        {
-            nowIndex++;
-            value -= eval2();
+        while(true)
+		{
+            if (nowIndex == substList.Count)
+            {
+                return value;
+            }
+            if (substList[nowIndex] == "+")
+            {
+                nowIndex++;
+                value += eval2();
+            }
+            else if (substList[nowIndex] == "-")
+            {
+                nowIndex++;
+                value -= eval2();
+            }
+            else
+                break;
         }
         return value;
     }

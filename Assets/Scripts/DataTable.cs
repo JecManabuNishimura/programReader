@@ -2,13 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-public class DataTable : MonoBehaviour
+public static partial class DataTable
 {
 	public struct VARIABLE_DATA
 	{
 		public string name;
 		public string mold;
 		public string value;
+		public int scoopNum;
 	}
 	public struct FUNC_DATA
 	{
@@ -26,6 +27,38 @@ public class DataTable : MonoBehaviour
 	{
 		variable.Clear();
 		function.Clear();
+	}
+
+	public static void DeleteVariableScoopData(int scoopIndex)
+	{
+		//データを削除する（解放された)
+		IEnumerable<VARIABLE_DATA> data = variable.Where(n => n.scoopNum > scoopIndex);
+		foreach(var d in data)
+		{
+			Debug.Log(d.name + "が、解放されました");
+		}
+		
+		//variable.RemoveAll(p => p.scoopNum > scoopIndex);
+	}
+
+	public static void DeleteVariableData(string name)
+	{
+		int i =0;
+		int index = 0;
+		foreach(var data in variable)
+		{
+			if(data.name == name)
+			{
+				index = i;
+				break;
+			}
+			i++;
+		}
+		variable.RemoveAt(index);
+	}
+	public static void DeleteVariableData(int index)
+	{
+		variable.RemoveAt(index);
 	}
 	public static void AddFuncData(FUNC_DATA fnc)
 	{
@@ -104,5 +137,23 @@ public class DataTable : MonoBehaviour
 	public static int GetFunctionNum()
 	{
 		return function.Count;
+	}
+}
+public static partial class DataTable
+{
+	public static IEnumerable<(T item, int index)> Indexed<T>(this IEnumerable<T> source)
+	{
+		var i = 0;
+		IEnumerable<(T item, int index)> impl()
+		{
+			foreach (var item in source)
+			{
+
+				yield return (item, i);
+				i++;
+			}
+		}
+
+		return impl();
 	}
 }
