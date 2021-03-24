@@ -22,9 +22,9 @@ public class ReadText : MonoBehaviour
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
+    static public bool loopEndFlag = false;         // for文終了フラグ
 
     static int bracketsCount = 0;
-    static int forCounter = 0;
 
     static int ifnestLevel = 0;
     static int allNestLevel = 0;
@@ -33,7 +33,7 @@ public class ReadText : MonoBehaviour
     static Stack<int> loopNestLevel = new Stack<int>();
 
     
-    static public LOOP_TYPE loopType = LOOP_TYPE.NONE;
+    static LOOP_TYPE loopType = LOOP_TYPE.NONE;
 
     struct SCOOP_NUM
 	{
@@ -138,7 +138,10 @@ public class ReadText : MonoBehaviour
 
     static public void InitializeData()
 	{
+        allNestLevel = 0;
         bracketsEndFlag = false;
+        forFlag = false;
+        skipFlag = false;
         ResetData();
 	}
 
@@ -176,7 +179,7 @@ public class ReadText : MonoBehaviour
                         Substitution(substList,leftValname);
 
                         // for文チェック
-                        if (forFlag && ifFlag)
+                        if (forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
                         {
                             if (ifcheck.CheckConditions(substList))
                             {
@@ -186,18 +189,13 @@ public class ReadText : MonoBehaviour
                             {
                                 skipFlag = true;
                                 skipNestLevel = allNestLevel;
+                                forFlag = false;
+                                nextLoopFlag = true;
                             }
                         }
-                        // リセット後にifフラグをtrueにする
                         else if (forFlag)
                         {
                             nextLoopFlag = true;
-                            if (forCounter == 0)
-                                ifFlag = true;
-                            forCounter++;
-                            substList.Clear();
-                            // ifFlagをONのままにしたいため、ResetDataに入らないようにする
-                            break;
                         }
 
                         ResetData();
@@ -212,6 +210,7 @@ public class ReadText : MonoBehaviour
                         if(forFlag)
 						{
                             nextLoopFlag = true;
+                            forFlag = false;
 						}
                         if(ifCheckFlag)
 						{
@@ -263,13 +262,13 @@ public class ReadText : MonoBehaviour
                         // for 文の場合
                         if(forFlag)
 						{
-                            if(forCounter != 1)         // 無理やりスキップ
+                            if(textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT)
 							{
                                 nextLoopFlag = true;
-                                forCounter++;
+                                // 代入処理
+                                Substitution(substList, leftValname);
+
                             }
-                            // 代入処理
-                            Substitution(substList,leftValname);
                         }
                         else if (substitutionFlag || ifFlag)
                         {
@@ -291,6 +290,7 @@ public class ReadText : MonoBehaviour
                                 }
                             }
                         }
+                        ResetData();
                         break;
                     case '}':
                         allNestLevel--;
@@ -298,11 +298,12 @@ public class ReadText : MonoBehaviour
                         bracketsEndFlag = true;
 
                         // ループネストが終了した場合
-                        if (forFlag)
-                        {
+                        if(loopNestLevel.Count != 0)
+						{
                             if (loopNestLevel.Peek() == allNestLevel)
                             {
                                 nextLoopFlag = true;
+                                forFlag = true;
                             }
                         }
                         // 関数から抜けた場合
@@ -315,8 +316,8 @@ public class ReadText : MonoBehaviour
                     case '=':
                         substitutionFlag = true;
 
-                        if(ifFlag)
-						{
+                        if((ifFlag) || (forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM))
+                        {
                             substList.Add(newSyntax[i].ToString());
                         }
                         break;
@@ -326,70 +327,79 @@ public class ReadText : MonoBehaviour
                         break;
 
                     case '+':
-                        if (substList.Count >= 1)
+                        // インクリメントや、計算はfor文の時は最後のステップの時のみ
+                        if ((forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
+                            (!forFlag) && !skipFlag)
                         {
-                            // インクリメント対応
-                            if (substList[substList.Count - 1] == "+")
+                            if (substList.Count >= 1)
                             {
-                                List<string> tmp = new List<string>();
-                                var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
+                                // インクリメント対応
+                                if (substList[substList.Count - 1] == "+")
+                                {
+                                    List<string> tmp = new List<string>();
+                                    var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
 
-                                tmp.Add(name); tmp.Add("+"); tmp.Add("1");
-                                if (substitutionFlag ==false)
-								{
-                                    substitutionFlag = true;
-                                    Substitution(tmp, name);
-                                    substitutionFlag = false;
+                                    tmp.Add(name); tmp.Add("+"); tmp.Add("1");
+                                    if (substitutionFlag == false)
+                                    {
+                                        substitutionFlag = true;
+                                        Substitution(tmp, name);
+                                        substitutionFlag = false;
+                                    }
+                                    else
+                                    {
+                                        Substitution(tmp, name);
+                                    }
+                                    if (substList.Count >= 2)
+                                    {
+                                        substList.RemoveAt(substList.Count - 1);
+                                    }
+                                    else
+                                    {
+                                        substList[substList.Count - 1] = name;
+                                    }
+                                    break;
                                 }
-                                else
-								{
-                                    Substitution(tmp, name);
-                                }
-                                if(substList.Count >= 2)
-								{
-                                    substList.RemoveAt(substList.Count - 1);
-								}
-                                else
-								{
-                                    substList[substList.Count - 1] = name;
-                                }
-                                break;
                             }
+                            substList.Add(newSyntax[i].ToString());
                         }
-                        substList.Add(newSyntax[i].ToString());
                         break;
                     case '-':
-                        if (substList.Count >= 1)
+                        if ((forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
+                            (!forFlag))
                         {
-                            // インクリメント対応
-                            if (substList[substList.Count - 1] == "-")
+                            if (substList.Count >= 1)
                             {
-                                List<string> tmp = new List<string>();
-                                var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
+                                // インクリメント対応
+                                if (substList[substList.Count - 1] == "-")
+                                {
+                                    List<string> tmp = new List<string>();
+                                    var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
 
-                                tmp.Add(name); tmp.Add("-"); tmp.Add("1");
-                                if (substitutionFlag == false)
-                                {
-                                    substitutionFlag = true;
-                                    Substitution(tmp, name);
-                                    substitutionFlag = false;
+                                    tmp.Add(name); tmp.Add("-"); tmp.Add("1");
+                                    if (substitutionFlag == false)
+                                    {
+                                        substitutionFlag = true;
+                                        Substitution(tmp, name);
+                                        substitutionFlag = false;
+                                    }
+                                    else
+                                    {
+                                        Substitution(tmp, name);
+                                    }
+                                    if (substList.Count >= 2)
+                                    {
+                                        substList.RemoveAt(substList.Count - 1);
+                                    }
+                                    else
+                                    {
+                                        substList[substList.Count - 1] = name;
+                                    }
+                                    break;
                                 }
-                                else
-                                {
-                                    Substitution(tmp, name);
-                                }
-                                if (substList.Count >= 2)
-                                {
-                                    substList.RemoveAt(substList.Count - 1);
-                                }
-                                else
-                                {
-                                    substList[substList.Count - 1] = name;
-                                }
-                                break;
                             }
+                            substList.Add(newSyntax[i].ToString());
                         }
-                        substList.Add(newSyntax[i].ToString());
                         break;
                     case '*':
                     case '/':
@@ -451,7 +461,6 @@ public class ReadText : MonoBehaviour
 						}
                         break;
                     case "for":
-                        forCounter = 0;
                         forFlag = true;
                         // 自身のネストを保存する
                         loopNestLevel.Push(allNestLevel);
@@ -501,6 +510,11 @@ public class ReadText : MonoBehaviour
             }
             // 代入
             else if(substitutionFlag || ifFlag)
+			{
+                substList.Add(newSyntax);
+            }
+            // for文時の終了条件用
+            else if(textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
 			{
                 substList.Add(newSyntax);
             }
@@ -564,11 +578,15 @@ public class ReadText : MonoBehaviour
     // 変数宣言
     static void VariableDeclaration(string name,string setMold)
 	{
-        DataTable.VARIABLE_DATA ValData;
-        ValData.name = name;
-        ValData.mold = setMold;
-        ValData.value = "0";
-        DataTable.AddVariableData(ValData);
+        if(name != "" && setMold != "")
+		{
+            DataTable.VARIABLE_DATA ValData;
+            ValData.name = name;
+            ValData.mold = setMold;
+            ValData.value = "0";
+            DataTable.AddVariableData(ValData);
+        }
+        
     }
     static void Substitution(List<string> list,string subName)
 	{

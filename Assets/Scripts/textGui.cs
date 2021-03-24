@@ -165,7 +165,7 @@ public class textGui : MonoBehaviour
 	TextEditor te;
 
 	Stack<LOOP_INDEX> loopIndex = new Stack<LOOP_INDEX>();
-	LOOP_NUMBER loopStepNumber = LOOP_NUMBER.NONE;
+	static  public LOOP_NUMBER loopStepNumber = LOOP_NUMBER.NONE;
 
 	public enum LOOP_NUMBER
 	{
@@ -271,6 +271,7 @@ public class textGui : MonoBehaviour
 		int counter = 0, maxcount = 2000;
 		int line = 1;
 		string nowText = "";
+		li.endIndex = li.nextIndex = li.startIndex = li.termIndex = 0;
 		loopStepNumber = 0;
 		while (te.cursorIndex != endpos)
 		{
@@ -287,7 +288,10 @@ public class textGui : MonoBehaviour
 			{
 				line++;
 			}
-
+			if(ReadText.loopEndFlag)
+			{
+				loopStepNumber = LOOP_NUMBER.NONE;
+			}
 			// ÉãÅ[ÉvëŒâû
 			if(ReadText.nextLoopFlag)
 			{
@@ -312,30 +316,27 @@ public class textGui : MonoBehaviour
 						}
 						else
 						{
-							te.selectIndex = te.cursorIndex = loopIndex.Peek().termIndex;
+							te.selectIndex = te.cursorIndex = loopIndex.Peek().startIndex;
 							loopStepNumber++;
 						}
 						break;
 					
 					case LOOP_NUMBER.PROCESSING:
-						if(li.startIndex == 0)
+						if (li.startIndex == 0)
 						{
-							li.startIndex = te.cursorIndex;
+							li.startIndex = te.cursorIndex - 1;
 							loopIndex.Push(li);
-							loopStepNumber = LOOP_NUMBER.NEXT;
 						}
-						else
-						{
-							te.selectIndex = te.cursorIndex = loopIndex.Peek().startIndex;
-							loopStepNumber++;
-						}
-						
+						loopStepNumber = LOOP_NUMBER.END;
+
 						break;
 					case LOOP_NUMBER.NEXT:
-						te.selectIndex = te.cursorIndex = loopIndex.Peek().nextIndex;
+						te.selectIndex = te.cursorIndex = loopIndex.Peek().termIndex;
 						loopStepNumber = LOOP_NUMBER.TERM;
 						break;
 					case LOOP_NUMBER.END:
+						te.selectIndex = te.cursorIndex = loopIndex.Peek().nextIndex;
+						loopStepNumber = LOOP_NUMBER.NEXT;
 						break;
 				}
 			}
