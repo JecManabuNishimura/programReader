@@ -38,7 +38,7 @@ public static partial class DataTable
 			Debug.Log(d.name + "‚ªA‰ð•ú‚³‚ê‚Ü‚µ‚½");
 		}
 		
-		//variable.RemoveAll(p => p.scoopNum > scoopIndex);
+		variable.RemoveAll(p => p.scoopNum > scoopIndex);
 	}
 
 	public static void DeleteVariableData(string name)

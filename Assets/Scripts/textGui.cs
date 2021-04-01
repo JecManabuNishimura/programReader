@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Text.RegularExpressions;
-using TMPro;
 
 public class Syntax
 {
@@ -165,6 +164,7 @@ public class textGui : MonoBehaviour
 	TextEditor te;
 
 	Stack<LOOP_INDEX> loopIndex = new Stack<LOOP_INDEX>();
+	int loopCount = 0;
 	static  public LOOP_NUMBER loopStepNumber = LOOP_NUMBER.NONE;
 
 	public enum LOOP_NUMBER
@@ -182,6 +182,7 @@ public class textGui : MonoBehaviour
 
 	public struct LOOP_INDEX
 	{
+		public LOOP_NUMBER StepNumber;
 		public int endIndex;
 		public int termIndex;
 		public int nextIndex;
@@ -252,8 +253,32 @@ public class textGui : MonoBehaviour
 
 		if ((GUIUtility.keyboardControl == te.controlID) &&  ev.Equals(Event.KeyboardEvent("tab")) )
 		{
-			ReadTextData(te, ev);
+			if(loopCount == 0)
+			{
+				TestReadText(te);
+				loopCount++;
+			}
+			//ReadTextData(te, ev);
+			ReadTextDataTest(te, ev);
 		}
+		// デバッグ用リセット
+		if ((Event.current.keyCode == KeyCode.F1) && (Event.current.type == EventType.KeyUp))
+		{
+			TestReadText(te);
+			Debug.Log("HOME");
+		}
+	}
+
+	void Init()
+	{
+
+		loopCount = 0;
+
+		li.endIndex = li.nextIndex = li.startIndex = li.termIndex = 0;
+
+		loopIndex.Clear();
+
+		loopStepNumber = 0;
 	}
 
 	void ReadTextData(TextEditor te, Event ev)//, ref string code)
@@ -268,11 +293,13 @@ public class textGui : MonoBehaviour
 		te.MoveTextEnd();
 		var endpos = te.selectIndex;
 		te.MoveTextStart();
+		
 		int counter = 0, maxcount = 2000;
 		int line = 1;
 		string nowText = "";
-		li.endIndex = li.nextIndex = li.startIndex = li.termIndex = 0;
-		loopStepNumber = 0;
+
+		Init();
+
 		while (te.cursorIndex != endpos)
 		{
 			te.SelectToStartOfNextWord();
@@ -281,64 +308,71 @@ public class textGui : MonoBehaviour
 			
 			nowText = te.SelectedText;
 			displayText.text = nowText;
-
-			te.MoveToStartOfNextWord();
-			counter++;
 			if (te.SelectedText.Contains("\n"))
 			{
 				line++;
 			}
+			te.MoveToStartOfNextWord();
+			counter++;
+
 			if(ReadText.loopEndFlag)
 			{
-				loopStepNumber = LOOP_NUMBER.NONE;
+				loopIndex.Pop();
+			}
+			else if(ReadText.newLoopFlag)
+			{
+				li.endIndex = 0;
+				li.nextIndex = 0;
+				li.termIndex = 0;
+				li.startIndex = 0;
+				li.StepNumber = LOOP_NUMBER.NONE;
+				loopIndex.Push(li);
 			}
 			// ループ対応
 			if(ReadText.nextLoopFlag)
 			{
-
-				switch (loopStepNumber)
+				switch (loopIndex.Peek().StepNumber)
 				{
 					case LOOP_NUMBER.NONE:
-						li.endIndex = 0;
-						li.nextIndex = 0;
-						li.termIndex = 0;
-						loopStepNumber++;
+						NextLoop(LOOP_NUMBER.INIT);
 						break;
 					case LOOP_NUMBER.INIT:
 						li.termIndex = te.cursorIndex;
-						loopStepNumber++;
+						NextLoop(LOOP_NUMBER.TERM);
 						break;
 					case LOOP_NUMBER.TERM:
 						if(li.nextIndex == 0)
 						{
 							li.nextIndex = te.cursorIndex;
-							loopStepNumber = LOOP_NUMBER.PROCESSING;
 						}
 						else
 						{
 							te.selectIndex = te.cursorIndex = loopIndex.Peek().startIndex;
-							loopStepNumber++;
 						}
+						NextLoop(LOOP_NUMBER.PROCESSING);
 						break;
 					
 					case LOOP_NUMBER.PROCESSING:
 						if (li.startIndex == 0)
 						{
 							li.startIndex = te.cursorIndex - 1;
-							loopIndex.Push(li);
-						}
-						loopStepNumber = LOOP_NUMBER.END;
+							li.StepNumber = loopIndex.Peek().StepNumber;
 
+							loopIndex.Pop();			// 初めにダミー用のものを削除する
+							loopIndex.Push(li);			// その後新しいデータを入れる
+						}
+						NextLoop(LOOP_NUMBER.END);
 						break;
 					case LOOP_NUMBER.NEXT:
 						te.selectIndex = te.cursorIndex = loopIndex.Peek().termIndex;
-						loopStepNumber = LOOP_NUMBER.TERM;
+						NextLoop(LOOP_NUMBER.TERM);
 						break;
 					case LOOP_NUMBER.END:
 						te.selectIndex = te.cursorIndex = loopIndex.Peek().nextIndex;
-						loopStepNumber = LOOP_NUMBER.NEXT;
+						NextLoop(LOOP_NUMBER.NEXT);
 						break;
 				}
+				loopStepNumber = loopIndex.Peek().StepNumber;
 			}
 
 			// 永久ループ回避
@@ -350,10 +384,111 @@ public class textGui : MonoBehaviour
 		ReadText.CreateData();
 	}
 
+	public void NextLoop(LOOP_NUMBER num)
+	{
+		LOOP_INDEX tmp = loopIndex.Peek();
+		tmp.StepNumber = num;
+		loopIndex.Pop();
+		loopIndex.Push(tmp);
+	}
+
+
 	void CreateText(Rect rect, string code,GUIStyle style)
 	{
 		picupText = Syntax.Highlight(code);
 		intext.text = picupText;
 	}
+	void TestReadText(TextEditor te)
+	{
+		// cursorIndex = 今のカーソル位置
+		// selectIndex = 移動後の位置（範囲選択）
+		ReadText.InitializeData();
+		// 変数一覧削除
+		DataTable.CrearData();
+		te.MoveTextEnd();
+		var endpos = te.selectIndex;
+		te.MoveTextStart();
 
+		Init();
+	}
+	void ReadTextDataTest(TextEditor te, Event ev)//, ref string code)
+	{
+
+		
+		string nowText = "";
+		int line = 1;
+
+		te.SelectToStartOfNextWord();
+		ReadText.GetText(te.SelectedText, line, te.cursorIndex);
+
+
+		nowText = te.SelectedText;
+		displayText.text = nowText;
+		if (te.SelectedText.Contains("\n"))
+		{
+			line++;
+		}
+		te.MoveToStartOfNextWord();
+
+		if (ReadText.loopEndFlag)
+		{
+			loopIndex.Pop();
+		}
+		else if (ReadText.newLoopFlag)
+		{
+			li.endIndex = 0;
+			li.nextIndex = 0;
+			li.termIndex = 0;
+			li.startIndex = 0;
+			li.StepNumber = LOOP_NUMBER.NONE;
+			loopIndex.Push(li);
+		}
+		// ループ対応
+		if (ReadText.nextLoopFlag)
+		{
+			switch (loopIndex.Peek().StepNumber)
+			{
+				case LOOP_NUMBER.NONE:
+					NextLoop(LOOP_NUMBER.INIT);
+					break;
+				case LOOP_NUMBER.INIT:
+					li.termIndex = te.cursorIndex;
+					NextLoop(LOOP_NUMBER.TERM);
+					break;
+				case LOOP_NUMBER.TERM:
+					if (li.nextIndex == 0)
+					{
+						li.nextIndex = te.cursorIndex;
+					}
+					else
+					{
+						te.selectIndex = te.cursorIndex = loopIndex.Peek().startIndex;
+					}
+					NextLoop(LOOP_NUMBER.PROCESSING);
+					break;
+
+				case LOOP_NUMBER.PROCESSING:
+					if (li.startIndex == 0)
+					{
+						li.startIndex = te.cursorIndex - 1;
+						li.StepNumber = loopIndex.Peek().StepNumber;
+
+						loopIndex.Pop();            // 初めにダミー用のものを削除する
+						loopIndex.Push(li);         // その後新しいデータを入れる
+					}
+					NextLoop(LOOP_NUMBER.END);
+					break;
+				case LOOP_NUMBER.NEXT:
+					te.selectIndex = te.cursorIndex = loopIndex.Peek().termIndex;
+					NextLoop(LOOP_NUMBER.TERM);
+					break;
+				case LOOP_NUMBER.END:
+					te.selectIndex = te.cursorIndex = loopIndex.Peek().nextIndex;
+					NextLoop(LOOP_NUMBER.NEXT);
+					break;
+			}
+			loopStepNumber = loopIndex.Peek().StepNumber;
+		}
+		ReadText.CreateData();
+	}
 }

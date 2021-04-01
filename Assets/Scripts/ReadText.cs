@@ -18,11 +18,14 @@ public partial class ReadText : MonoBehaviour
     static bool ifCheckFlag = false;                // if文判定後フラグ
     static bool skipFlag = false;                   // スキップフラグ
     static bool forFlag = false;                    // for文フラグ
+    static bool whileFlag = false;                  // while文フラグ
+
 
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
     static public bool loopEndFlag = false;         // for文終了フラグ
+    static public bool newLoopFlag = false;
 
     static int bracketsCount = 0;
 
@@ -30,10 +33,29 @@ public partial class ReadText : MonoBehaviour
     static int allNestLevel = 0;
     static int skipNestLevel = -1;
     static int funcNestLevel = 0;
-    static Stack<int> loopNestLevel = new Stack<int>();
+    static Stack<LOOP_TYPE> loopNestLevel = new Stack<LOOP_TYPE>();
 
-    
-    static LOOP_TYPE loopType = LOOP_TYPE.NONE;
+    enum LOOP_TYPE_NAME
+    {
+        FOR,
+        WHILE,
+        DO_WHILE
+    }
+
+    struct LOOP_TYPE
+	{
+        public int nest;
+        public LOOP_TYPE_NAME type;
+
+        // コンストラクタ
+        public LOOP_TYPE(int nestNum,LOOP_TYPE_NAME name)
+		{
+            nest = nestNum;
+            type = name;
+		}
+	}
+
+
 
     struct SCOOP_NUM
 	{
@@ -46,18 +68,6 @@ public partial class ReadText : MonoBehaviour
         EQUAL,
         BIG,
         SMALL
-	}
-
-    public enum LOOP_TYPE
-	{
-        NONE,
-        DEF,
-        INIT,
-        TERM,
-        NEXT,
-        PROCESSING,
-        BEGIN_PROCESSING,
-        END,
 	}
 
     static IF_TYPE ifType;
@@ -76,6 +86,8 @@ public partial class ReadText : MonoBehaviour
     GameObject variaObj;
     [SerializeField]
     GameObject funcObj;
+    [SerializeField]
+    Text skipFLagObj;
     //------------------------------------------------------------
 
     //----------デバッグスタック用--------------------------------------------------
@@ -84,6 +96,7 @@ public partial class ReadText : MonoBehaviour
 
     static GameObject tmpfunTable;
     static GameObject tmpfunObj;
+    static GameObject tmpskipflagObj;
     //------------------------------------------------------------
     static DataTable.FUNC_DATA fncData;
 
@@ -96,8 +109,12 @@ public partial class ReadText : MonoBehaviour
         tmpfunObj = funcObj;
         tmpfunTable = funcTable;
     }
+	private void Update()
+	{
+        skipFLagObj.text = skipFlag.ToString();
+	}
 
-    public static readonly string[] cName = new string[]
+	public static readonly string[] cName = new string[]
     {
         "int",
         "float",
@@ -142,6 +159,7 @@ public partial class ReadText : MonoBehaviour
         bracketsEndFlag = false;
         forFlag = false;
         skipFlag = false;
+        loopNestLevel.Clear();
         ResetData();
 	}
 
@@ -150,6 +168,7 @@ public partial class ReadText : MonoBehaviour
         string newSyntax = uiText.TrimEnd(' ');
         
         nextLoopFlag = false;
+        loopEndFlag = false;
 
         if (newSyntax == "\n" || newSyntax == "")
 		{
@@ -189,8 +208,10 @@ public partial class ReadText : MonoBehaviour
                             {
                                 skipFlag = true;
                                 skipNestLevel = allNestLevel;
+                                loopNestLevel.Pop();
                                 forFlag = false;
-                                nextLoopFlag = true;
+                                //nextLoopFlag = true;
+                                loopEndFlag = true;
                             }
                         }
                         else if (forFlag)
@@ -205,8 +226,14 @@ public partial class ReadText : MonoBehaviour
                     case '(':
                         if(forFlag)
 						{
+                            newLoopFlag = false;
                             nextLoopFlag = true;
 						}
+                        else if (whileFlag)
+						{
+                            ifFlag = true;
+                            newLoopFlag = false;
+                        }
                         if (mold != "" && leftValname != "")
                         {
                             if (newSyntax.IndexOf("(") >= 0)
@@ -232,7 +259,7 @@ public partial class ReadText : MonoBehaviour
                     case ')':
                         argumentFlag = false;
                         bracketsCount--;
-
+                        whileFlag = false;
                         // for 文の場合
                         if(forFlag)
 						{
@@ -244,6 +271,7 @@ public partial class ReadText : MonoBehaviour
 
                             }
                         }
+
                         else if (substitutionFlag || ifFlag)
                         {
                             substList.Add(newSyntax[i].ToString());
@@ -296,17 +324,39 @@ public partial class ReadText : MonoBehaviour
                         break;
                     case '}':
                         allNestLevel--;
-                        skipNestLevel = -1;
+
+                        // スキップされる行数を越した場合
+                        if (skipNestLevel >= allNestLevel)
+                        {
+                            if(skipFlag)
+							{
+                                skipFlag = false;
+                                skipNestLevel = -1;
+                            }
+                            
+                        }
+                        //skipNestLevel = -1;
                         bracketsEndFlag = true;
+
                         DataTable.DeleteVariableScoopData(allNestLevel);
 
                         // ループネストが終了した場合
                         if (loopNestLevel.Count != 0)
 						{
-                            if (loopNestLevel.Peek() == allNestLevel)
+                            if (loopNestLevel.Peek().nest == allNestLevel)
                             {
-                                nextLoopFlag = true;
-                                forFlag = true;
+								switch (loopNestLevel.Peek().type)
+								{
+                                    case LOOP_TYPE_NAME.FOR:
+                                        nextLoopFlag = true;
+                                        forFlag = true;
+                                        break;
+                                    case LOOP_TYPE_NAME.WHILE:
+
+                                        break;
+                                }
+
+                                
                             }
                         }
                         // 関数から抜けた場合
@@ -434,7 +484,7 @@ public partial class ReadText : MonoBehaviour
                 // スキップされる行数を越した場合
                 if (skipNestLevel >= allNestLevel)
                 {
-                    skipNestLevel = -1;
+                    //skipNestLevel = -1;
                 }
 
                 return;
@@ -451,8 +501,9 @@ public partial class ReadText : MonoBehaviour
 
                         break;
                     case "else":
-                        // if文が定義されている
-                        if(ifnestLevel > 0)
+						#region else文の処理
+						// if文が定義されている
+						if (ifnestLevel > 0)
 						{
                             // if文がfalseだったら
                             if(!ifCheckFlag)
@@ -472,13 +523,18 @@ public partial class ReadText : MonoBehaviour
                             // if文が定義されていないからエラー
                             Debug.Log("if文がありません");
 						}
-                        break;
+						#endregion
+						break;
                     case "for":
                         forFlag = true;
+                        newLoopFlag = true;
                         // 自身のネストを保存する
-                        loopNestLevel.Push(allNestLevel);
+                        loopNestLevel.Push(new LOOP_TYPE(allNestLevel,LOOP_TYPE_NAME.FOR));
                         break;
                     case "while":
+                        whileFlag = true;
+                        newLoopFlag = true;
+                        loopNestLevel.Push(new LOOP_TYPE(allNestLevel, LOOP_TYPE_NAME.WHILE));
                         break;
                 }
 				#endregion
@@ -575,6 +631,7 @@ public partial class ReadText : MonoBehaviour
 
             bracketsEndFlag = false;
         }
+        
     }
     
     static bool CheckReservedWord(string tex)
@@ -634,7 +691,6 @@ public partial class ReadText : MonoBehaviour
             }
         }
     }
-
 
     static void ScoopPush(int line)
 	{
