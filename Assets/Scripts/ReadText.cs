@@ -17,15 +17,14 @@ public partial class ReadText : MonoBehaviour
     static bool ifFlag = false;                     // if文フラグ
     static bool ifCheckFlag = false;                // if文判定後フラグ
     static bool skipFlag = false;                   // スキップフラグ
-    static bool forFlag = false;                    // for文フラグ
-    static bool whileFlag = false;                  // while文フラグ
-
-
+    static bool loopFlag = false;                    // ループ用フラグ
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
     static public bool loopEndFlag = false;         // for文終了フラグ
     static public bool newLoopFlag = false;
+
+    static public LOOP_TYPE_NAME loopType = new LOOP_TYPE_NAME();
 
     static int bracketsCount = 0;
 
@@ -35,8 +34,9 @@ public partial class ReadText : MonoBehaviour
     static int funcNestLevel = 0;
     static Stack<LOOP_TYPE> loopNestLevel = new Stack<LOOP_TYPE>();
 
-    enum LOOP_TYPE_NAME
+    public enum LOOP_TYPE_NAME
     {
+        NONE,
         FOR,
         WHILE,
         DO_WHILE
@@ -54,8 +54,6 @@ public partial class ReadText : MonoBehaviour
             type = name;
 		}
 	}
-
-
 
     struct SCOOP_NUM
 	{
@@ -76,6 +74,8 @@ public partial class ReadText : MonoBehaviour
     static Stack<int> nestStack = new Stack<int>();
 
     static List<string> substList = new List<string>();
+
+    static public textGui.LOOP_NUMBER loopStep = textGui.LOOP_NUMBER.NONE;
 
     //----------デバッグ用--------------------------------------------------
     [SerializeField]
@@ -111,8 +111,14 @@ public partial class ReadText : MonoBehaviour
     }
 	private void Update()
 	{
-        skipFLagObj.text = skipFlag.ToString();
-	}
+        skipFLagObj.text = "skipFlag:" + skipFlag.ToString();
+        skipFLagObj.text = skipFLagObj.text + "\n";
+        skipFLagObj.text = skipFLagObj.text + "nextLoopFlag:" + nextLoopFlag.ToString();
+        skipFLagObj.text = skipFLagObj.text + "\n";
+        skipFLagObj.text = skipFLagObj.text + "loopStep:" + loopStep.ToString();
+        skipFLagObj.text = skipFLagObj.text + "\n";
+        skipFLagObj.text = skipFLagObj.text + "loopType:" + loopType.ToString();
+    }
 
 	public static readonly string[] cName = new string[]
     {
@@ -157,7 +163,7 @@ public partial class ReadText : MonoBehaviour
 	{
         allNestLevel = 0;
         bracketsEndFlag = false;
-        forFlag = false;
+        loopFlag = false;
         skipFlag = false;
         loopNestLevel.Clear();
         ResetData();
@@ -198,7 +204,7 @@ public partial class ReadText : MonoBehaviour
                         Substitution(substList,leftValname);
 
                         // for文チェック
-                        if (forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
+                        if (loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
                         {
                             if (ifcheck.CheckConditions(substList))
                             {
@@ -209,12 +215,17 @@ public partial class ReadText : MonoBehaviour
                                 skipFlag = true;
                                 skipNestLevel = allNestLevel;
                                 loopNestLevel.Pop();
-                                forFlag = false;
+                                loopFlag = false;
                                 //nextLoopFlag = true;
                                 loopEndFlag = true;
+                                if (loopNestLevel.Count != 0)
+                                {
+                                    // textGui.cs内で判断するように保存
+                                    loopType = loopNestLevel.Peek().type;
+                                }
                             }
                         }
-                        else if (forFlag)
+                        else if (loopFlag)
                         {
                             nextLoopFlag = true;
                         }
@@ -224,16 +235,7 @@ public partial class ReadText : MonoBehaviour
                         break;
                    
                     case '(':
-                        if(forFlag)
-						{
-                            newLoopFlag = false;
-                            nextLoopFlag = true;
-						}
-                        else if (whileFlag)
-						{
-                            ifFlag = true;
-                            newLoopFlag = false;
-                        }
+                        
                         if (mold != "" && leftValname != "")
                         {
                             if (newSyntax.IndexOf("(") >= 0)
@@ -254,22 +256,66 @@ public partial class ReadText : MonoBehaviour
                         {
                             substList.Add(newSyntax[i].ToString());
                         }
+
+                        if (loopFlag)
+                        {
+                            // textGui.cs内で判断するように保存
+                            loopType = loopNestLevel.Peek().type;
+
+                            switch (loopType)
+                            {
+                                case LOOP_TYPE_NAME.FOR:
+
+                                    nextLoopFlag = true;
+                                    break;
+                                case LOOP_TYPE_NAME.WHILE:
+                                    ifFlag = true;
+                                    nextLoopFlag = true;
+                                    break;
+                            }
+                            newLoopFlag = false;
+
+                        }
+
                         bracketsCount++;
                         break;
                     case ')':
                         argumentFlag = false;
                         bracketsCount--;
-                        whileFlag = false;
-                        // for 文の場合
-                        if(forFlag)
+                        // ループ場合
+                        if(loopFlag)
 						{
-                            if(textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT)
+                            switch (loopNestLevel.Peek().type)
 							{
-                                nextLoopFlag = true;
-                                // 代入処理
-                                Substitution(substList, leftValname);
-
+                                case LOOP_TYPE_NAME.FOR:
+                                    if (textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT)
+                                    {
+                                        nextLoopFlag = true;
+                                        // 代入処理
+                                        Substitution(substList, leftValname);
+                                    }
+                                    break;
+                                case LOOP_TYPE_NAME.WHILE:
+                                    if (!ifcheck.CheckConditions(substList))
+									{
+                                        skipFlag = true;
+                                        skipNestLevel = allNestLevel;
+                                        loopNestLevel.Pop();
+                                        loopFlag = false;
+                                        loopEndFlag = true;
+                                        if(loopNestLevel.Count != 0)
+										{
+                                            // textGui.cs内で判断するように保存
+                                            loopType = loopNestLevel.Peek().type;
+                                        }
+                                    }
+                                    else
+									{
+                                        nextLoopFlag = true;
+									}
+                                    break;
                             }
+                            
                         }
 
                         else if (substitutionFlag || ifFlag)
@@ -309,10 +355,18 @@ public partial class ReadText : MonoBehaviour
 
                         ScoopPush(line);
 
-                        if (forFlag)
+                        if (loopFlag)
                         {
+                            switch (loopNestLevel.Peek().type)
+                            {
+                                case LOOP_TYPE_NAME.FOR:
+                                    nextLoopFlag = true;
+                                    break;
+                                case LOOP_TYPE_NAME.WHILE:
+                                    break;
+                            }
                             nextLoopFlag = true;
-                            forFlag = false;
+                            loopFlag = false;
                         }
                         if (ifCheckFlag)
                         {
@@ -349,14 +403,14 @@ public partial class ReadText : MonoBehaviour
 								{
                                     case LOOP_TYPE_NAME.FOR:
                                         nextLoopFlag = true;
-                                        forFlag = true;
+                                        loopFlag = true;
                                         break;
                                     case LOOP_TYPE_NAME.WHILE:
-
+                                        nextLoopFlag = true;
+                                        loopFlag = true;
+                                        ifFlag = true;
                                         break;
                                 }
-
-                                
                             }
                         }
                         // 関数から抜けた場合
@@ -379,7 +433,7 @@ public partial class ReadText : MonoBehaviour
                         }
                         substitutionFlag = true;
 
-                        if((ifFlag) || (forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM))
+                        if((ifFlag) || (loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM))
                         {
                             substList.Add(newSyntax[i].ToString());
                         }
@@ -391,8 +445,8 @@ public partial class ReadText : MonoBehaviour
 
                     case '+':
                         // インクリメントや、計算はfor文の時は最後のステップの時のみ
-                        if ((forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
-                            (!forFlag) && !skipFlag)
+                        if ((loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
+                            (!loopFlag) && !skipFlag)
                         {
                             if (substList.Count >= 1)
                             {
@@ -428,8 +482,8 @@ public partial class ReadText : MonoBehaviour
                         }
                         break;
                     case '-':
-                        if ((forFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
-                            (!forFlag) && !skipFlag)
+                        if ((loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
+                            (!loopFlag) && !skipFlag)
                         {
                             if (substList.Count >= 1)
                             {
@@ -479,14 +533,9 @@ public partial class ReadText : MonoBehaviour
         }
         else
 		{
+            // ネストスキップの場合
             if(skipFlag && skipNestLevel != -1)
 			{
-                // スキップされる行数を越した場合
-                if (skipNestLevel >= allNestLevel)
-                {
-                    //skipNestLevel = -1;
-                }
-
                 return;
             }
             // 予約語チェック
@@ -526,15 +575,18 @@ public partial class ReadText : MonoBehaviour
 						#endregion
 						break;
                     case "for":
-                        forFlag = true;
+                        loopFlag = true;
                         newLoopFlag = true;
                         // 自身のネストを保存する
                         loopNestLevel.Push(new LOOP_TYPE(allNestLevel,LOOP_TYPE_NAME.FOR));
+                        loopType = loopNestLevel.Peek().type;
                         break;
                     case "while":
-                        whileFlag = true;
+                        loopFlag = true;
                         newLoopFlag = true;
+                        nextLoopFlag = true;
                         loopNestLevel.Push(new LOOP_TYPE(allNestLevel, LOOP_TYPE_NAME.WHILE));
+                        loopType = loopNestLevel.Peek().type;
                         break;
                 }
 				#endregion
