@@ -18,11 +18,12 @@ public partial class ReadText : MonoBehaviour
     static bool ifCheckFlag = false;                // if文判定後フラグ
     static bool skipFlag = false;                   // スキップフラグ
     static bool loopFlag = false;                    // ループ用フラグ
+    static bool prefixFlag = false;                 // 前置フラグ
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
     static public bool loopEndFlag = false;         // for文終了フラグ
-    static public bool newLoopFlag = false;
+    static public bool newLoopFlag = false;         // インクリメントデクリメント
 
     static public LOOP_TYPE_NAME loopType = new LOOP_TYPE_NAME();
 
@@ -118,6 +119,15 @@ public partial class ReadText : MonoBehaviour
         skipFLagObj.text = skipFLagObj.text + "loopStep:" + loopStep.ToString();
         skipFLagObj.text = skipFLagObj.text + "\n";
         skipFLagObj.text = skipFLagObj.text + "loopType:" + loopType.ToString();
+        skipFLagObj.text = skipFLagObj.text + "\n";
+        skipFLagObj.text = skipFLagObj.text + "leftValueName:" + leftValname.ToString();
+        skipFLagObj.text = skipFLagObj.text + "\n";
+        skipFLagObj.text = skipFLagObj.text + "substList:";
+        foreach (var str in substList)
+		{
+            skipFLagObj.text = skipFLagObj.text + str.ToString() + "  ";
+        }
+        
     }
 
 	public static readonly string[] cName = new string[]
@@ -161,6 +171,7 @@ public partial class ReadText : MonoBehaviour
 
     static public void InitializeData()
 	{
+        prefixFlag = false;
         allNestLevel = 0;
         bracketsEndFlag = false;
         loopFlag = false;
@@ -454,28 +465,34 @@ public partial class ReadText : MonoBehaviour
                                 if (substList[substList.Count - 1] == "+")
                                 {
                                     List<string> tmp = new List<string>();
-                                    var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
-
-                                    tmp.Add(name); tmp.Add("+"); tmp.Add("1");
-                                    if (substitutionFlag == false)
-                                    {
-                                        substitutionFlag = true;
-                                        Substitution(tmp, name);
-                                        substitutionFlag = false;
+                                    if(substList.Count >= 2)
+									{
+                                        // 後置型
+                                        if (CheckVarialbleData(substList[substList.Count - 2]))
+										{
+                                            string tmpName = substList[substList.Count - 2];
+                                            substList[substList.Count - 2] = DataTable.GetVariableValueData(tmpName);
+                                            substList.RemoveAt(substList.Count - 1);
+                                            tmp.Add(tmpName); tmp.Add("+"); tmp.Add("1");
+                                            if (substitutionFlag == false)
+                                            {
+                                                substitutionFlag = true;
+                                                Substitution(tmp, tmpName);
+                                                substitutionFlag = false;
+                                            }
+                                            else
+                                            {
+                                                Substitution(tmp, tmpName);
+                                            }
+                                            break;
+                                        }
                                     }
+                                    // 前置型
+                                    // インクリメントが初めの場合
                                     else
-                                    {
-                                        Substitution(tmp, name);
-                                    }
-                                    if (substList.Count >= 2)
-                                    {
-                                        substList.RemoveAt(substList.Count - 1);
-                                    }
-                                    else
-                                    {
-                                        substList[substList.Count - 1] = name;
-                                    }
-                                    break;
+									{
+                                        prefixFlag = true;
+									}
                                 }
                             }
                             substList.Add(newSyntax[i].ToString());
@@ -631,50 +648,72 @@ public partial class ReadText : MonoBehaviour
                 #endregion
             }
             // 代入
-            else if(substitutionFlag || ifFlag)
+            else 
 			{
                 substList.Add(newSyntax);
-            }
-            // for文時の終了条件用
-            else if(textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
-			{
-                substList.Add(newSyntax);
-            }
-            else if (mold == "" && fncData.returnName == null)
-            {
-                // 型のチェック
-                foreach (var st in cName)
+                // インクリメント・デクリメント用前置型
+                if(prefixFlag)
                 {
-                    if (st == newSyntax)
+                    // 変数の場合
+                    if (CheckVarialbleData(newSyntax))
                     {
-                        mold = newSyntax;
-                        return; // 型指定の為、終了
+                        List<string> tmp = new List<string>();
+                        tmp.Add(newSyntax); tmp.Add(substList[substList.Count - 2]); tmp.Add("1");
+                        Substitution(tmp, newSyntax,true);
+                        substList.RemoveAt(substList.Count - 3);
+                        substList.RemoveAt(substList.Count - 2);
+                        substList[substList.Count - 1] = DataTable.GetVariableValueData(newSyntax);
                     }
+                    else
+                    {
+                        // 変数ではないので、エラー
+                        Debug.LogError("インクリメント・デクリメントエラー");
+                    }
+                    prefixFlag = false;
                 }
-
-                // 変数名が設定されていない場合
-                if (leftValname == "")
+                else if (substitutionFlag || ifFlag)
+				{
+                    // 左辺が無い場合
+                    if(!ifFlag && leftValname == "")
+					{
+                        leftValname = substList[substList.Count - 2];
+                        substList.RemoveAt(substList.Count - 2);
+                    }
+				}
+                // for文時の終了条件用
+                /*else if (textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
                 {
-                    // すでに変数宣言がされているのか
-                    //if (CheckVarialbleData(newSyntax))
+                    //substList.Add(newSyntax);
+                }*/
+                else if (mold == "" && fncData.returnName == null)
+                {
+                    // 型のチェック
+                    foreach (var st in cName)
+                    {
+                        if (st == newSyntax)
+                        {
+                            mold = newSyntax;
+                            return; // 型指定の為、終了
+                        }
+                    }
+                    // 変数名が設定されていない場合
+                    if (leftValname == "")
                     {
                         leftValname = newSyntax;
+                        substList.RemoveAt(substList.Count - 1);
                     }
                 }
-            }
-            else
-			{
-                // 変数名が設定されていない場合
-                if (leftValname == "")
+                else
                 {
-                    // すでに変数宣言がされているのか
-                    //if (CheckVarialbleData(newSyntax))
-                    {
-                        leftValname = newSyntax;
-                    }
-                }
+					// 変数名が設定されていない場合
+					if (leftValname == "")
+					{
+						leftValname = newSyntax;
+                        substList.RemoveAt(substList.Count - 2);
+                        substList.RemoveAt(substList.Count - 1);
+					}
+				}
             }
-
             // 中カッコが終わっている
             if(bracketsEndFlag)
 			{
@@ -724,10 +763,14 @@ public partial class ReadText : MonoBehaviour
             }
 		}
     }
-    static void Substitution(List<string> list,string subName)
+    static void Substitution(List<string> list,string subName,bool flag = false)
 	{
+        if(!flag)
+		{
+            flag = substitutionFlag;
+        }
         // 代入チェック
-        if (substitutionFlag)
+        if (flag)
         {
             var val = arithmeticCheck.Check(list);
             // 変数名チェック
