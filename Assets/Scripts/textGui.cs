@@ -162,6 +162,8 @@ public class textGui : MonoBehaviour
 	string cachedHighlightedCode { get; set; }
 
 	TextEditor te;
+	bool tabFlag = false;
+	int tabIndex = 0;
 
 	Stack<LOOP_INDEX> loopIndex = new Stack<LOOP_INDEX>();
 	int loopCount = 0;
@@ -206,8 +208,18 @@ public class textGui : MonoBehaviour
 	private void OnGUI()
 	{
 		GUI.skin = skin;
+		
 		te = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
-		var style = new GUIStyle(GUI.skin.textArea);
+		if(tabFlag)
+		{
+			te.cursorIndex = tabIndex;
+			te.selectIndex = tabIndex;
+			// 2fíˆílÇ™0Ç…ã≠êßìIÇ…ñﬂÇÈ
+			// å¥àˆïsñæ
+			if(tabIndex == te.cursorIndex)
+				tabFlag = false;
+		}
+	    var style = new GUIStyle(GUI.skin.textArea);
 		style.fontSize = (int)intext.fontSize;
 		style.wordWrap = true;
 		hideText = Dorw(te, hideText, style);
@@ -215,13 +227,15 @@ public class textGui : MonoBehaviour
 
 	string Dorw(TextEditor te, string code,GUIStyle style)
 	{
-		
+		int cIndex = te.cursorIndex;
 		var preBackGroundColor = GUI.backgroundColor;
 		var preColor = GUI.color;
 		//Rect rect1 = new Rect(0 ,0, intext.rectTransform.sizeDelta.x, intext.rectTransform.sizeDelta.y);
 		Rect rect1 = new Rect(0 ,0, 960, 1080);
 
 		var backStyle = new GUIStyle(style);
+		backStyle.font = intext.font;
+		
 		backStyle.normal.textColor = Color.clear;
 		backStyle.hover.textColor = Color.clear;
 		backStyle.active.textColor = Color.clear;
@@ -247,7 +261,7 @@ public class textGui : MonoBehaviour
 		
 		GUI.backgroundColor = preBackGroundColor;
 		GUI.color = preColor;
-
+		
 		return editedCode;
 	}
 
@@ -255,6 +269,12 @@ public class textGui : MonoBehaviour
 	{
 
 		if ((GUIUtility.keyboardControl == te.controlID) &&  ev.Equals(Event.KeyboardEvent("tab")) )
+		{
+			tabFlag = true;
+			code = code.Insert(te.cursorIndex, "   ");
+			tabIndex = te.cursorIndex + 3;
+		}
+		if ((Event.current.keyCode == KeyCode.F10) && (Event.current.type == EventType.KeyUp))
 		{
 			ReadTextDataTest(te, ev);
 		}

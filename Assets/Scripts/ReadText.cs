@@ -470,41 +470,6 @@ public partial class ReadText : MonoBehaviour
 								{
                                     break;
 								}
-                                
-                                /*
-                                // インクリメント対応
-                                if (substList[substList.Count - 1] == "+")
-                                {
-                                    List<string> tmp = new List<string>();
-                                    if(substList.Count >= 2)
-									{
-                                        // 後置型
-                                        if (CheckVarialbleData(substList[substList.Count - 2]))
-										{
-                                            string tmpName = substList[substList.Count - 2];
-                                            substList[substList.Count - 2] = DataTable.GetVariableValueData(tmpName);
-                                            substList.RemoveAt(substList.Count - 1);
-                                            tmp.Add(tmpName); tmp.Add("+"); tmp.Add("1");
-                                            if (substitutionFlag == false)
-                                            {
-                                                substitutionFlag = true;
-                                                Substitution(tmp, tmpName);
-                                                substitutionFlag = false;
-                                            }
-                                            else
-                                            {
-                                                Substitution(tmp, tmpName);
-                                            }
-                                            break;
-                                        }
-                                    }
-                                    // 前置型
-                                    // インクリメントが初めの場合
-                                    else
-									{
-                                        prefixFlag = true;
-									}
-                                }*/
                             }
                             substList.Add(newSyntax[i].ToString());
                         }
@@ -519,35 +484,6 @@ public partial class ReadText : MonoBehaviour
                                 {
                                     break;
                                 }
-
-                                /*
-                                // インクリメント対応
-                                if (substList[substList.Count - 1] == "-")
-                                {
-                                    List<string> tmp = new List<string>();
-                                    var name = substList.Count >= 2 ? substList[substList.Count - 2] : leftValname;
-
-                                    tmp.Add(name); tmp.Add("-"); tmp.Add("1");
-                                    if (substitutionFlag == false)
-                                    {
-                                        substitutionFlag = true;
-                                        Substitution(tmp, name);
-                                        substitutionFlag = false;
-                                    }
-                                    else
-                                    {
-                                        Substitution(tmp, name);
-                                    }
-                                    if (substList.Count >= 2)
-                                    {
-                                        substList.RemoveAt(substList.Count - 1);
-                                    }
-                                    else
-                                    {
-                                        substList[substList.Count - 1] = name;
-                                    }
-                                    break;
-                                }*/
                             }
                             substList.Add(newSyntax[i].ToString());
                         }
