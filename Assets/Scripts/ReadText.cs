@@ -448,6 +448,11 @@ public partial class ReadText : MonoBehaviour
                         {
                             substList.Add(newSyntax[i].ToString());
                         }
+                        else if(mold == "")
+						{
+                            leftValname = substList[substList.Count - 1];
+                            substList.RemoveAt(substList.Count - 1);
+						}
                         break;
                     case ',':
                         // カンマあり
@@ -461,6 +466,12 @@ public partial class ReadText : MonoBehaviour
                         {
                             if (substList.Count >= 1)
                             {
+                                if(SetOpeData(substList[substList.Count - 1]))
+								{
+                                    break;
+								}
+                                
+                                /*
                                 // インクリメント対応
                                 if (substList[substList.Count - 1] == "+")
                                 {
@@ -493,7 +504,7 @@ public partial class ReadText : MonoBehaviour
 									{
                                         prefixFlag = true;
 									}
-                                }
+                                }*/
                             }
                             substList.Add(newSyntax[i].ToString());
                         }
@@ -504,6 +515,12 @@ public partial class ReadText : MonoBehaviour
                         {
                             if (substList.Count >= 1)
                             {
+                                if (SetOpeData(substList[substList.Count - 1]))
+                                {
+                                    break;
+                                }
+
+                                /*
                                 // インクリメント対応
                                 if (substList[substList.Count - 1] == "-")
                                 {
@@ -530,7 +547,7 @@ public partial class ReadText : MonoBehaviour
                                         substList[substList.Count - 1] = name;
                                     }
                                     break;
-                                }
+                                }*/
                             }
                             substList.Add(newSyntax[i].ToString());
                         }
@@ -680,11 +697,6 @@ public partial class ReadText : MonoBehaviour
                         substList.RemoveAt(substList.Count - 2);
                     }
 				}
-                // for文時の終了条件用
-                /*else if (textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
-                {
-                    //substList.Add(newSyntax);
-                }*/
                 else if (mold == "" && fncData.returnName == null)
                 {
                     // 型のチェック
@@ -696,12 +708,13 @@ public partial class ReadText : MonoBehaviour
                             return; // 型指定の為、終了
                         }
                     }
+                    /*
                     // 変数名が設定されていない場合
                     if (leftValname == "")
                     {
                         leftValname = newSyntax;
                         substList.RemoveAt(substList.Count - 1);
-                    }
+                    }*/
                 }
                 else
                 {
@@ -723,6 +736,39 @@ public partial class ReadText : MonoBehaviour
             bracketsEndFlag = false;
         }
         
+    }
+
+    // インクリメント対応
+    static bool SetOpeData(string ope)
+	{
+        // 後置の場合のみtrue
+        bool result = false;
+        // インクリメント対応
+        if (ope == "+" || ope == "-")
+        {
+            List<string> tmp = new List<string>();
+            if (substList.Count >= 2)
+            {
+                // 後置型
+                if (CheckVarialbleData(substList[substList.Count - 2]))
+                {
+                    string tmpName = substList[substList.Count - 2];
+                    substList[substList.Count - 2] = DataTable.GetVariableValueData(tmpName);
+                    substList.RemoveAt(substList.Count - 1);
+                    tmp.Add(tmpName); tmp.Add(ope); tmp.Add("1");
+                    Substitution(tmp, tmpName,true);
+                }
+                result = true;
+            }
+            
+            else
+            {
+                // 前置型
+                // インクリメントが初めの場合
+                prefixFlag = true;
+            }
+        }
+        return result;
     }
     
     static bool CheckReservedWord(string tex)
