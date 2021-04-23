@@ -16,9 +16,9 @@ public class arithmeticCheck : MonoBehaviour
         return eval1().ToString();
     }
 
-    static int eval1()
+    static double eval1()
     {
-        int value = eval2();
+        var value = eval2();
         while(true)
 		{
             if (nowIndex == substList.Count)
@@ -41,9 +41,9 @@ public class arithmeticCheck : MonoBehaviour
         return value;
     }
 
-    static int eval2()
+    static double eval2()
     {
-        int value = eval3();
+        var value = eval3();
         if (nowIndex == substList.Count)
         {
             return value;
@@ -58,15 +58,20 @@ public class arithmeticCheck : MonoBehaviour
             nowIndex++;
             value /= eval3();
         }
+        else if (substList[nowIndex] == "%")
+        {
+            nowIndex++;
+            value %= eval3();
+        }
         return value;
     }
 
-    static int eval3()
+    static double eval3()
     {
         if (substList[nowIndex] == "(")
         {
             nowIndex++;
-            int value = eval1();
+            var value = eval1();
             if (substList[nowIndex] != ")")
             {
                 // 閉じがない
@@ -78,30 +83,84 @@ public class arithmeticCheck : MonoBehaviour
             return number();
     }
 
-    static int number()
+    static double number()
     {
-        int value = 0;
-
-        if (int.TryParse(substList[nowIndex], out int result))
-        {
-            value = result;
-        }
-        else
-        {
-            // 数字ではないので、変数
-            // すでに定義されている変数なのか
-            // 定義されていない変数の場合はエラー
-            string sv = DataTable.GetVariableValueData(substList[nowIndex]);
-            if (sv != "")
-            {
-                value = int.Parse(sv);
+        var value = 0.0f;
+        bool plasFlag = true;           // falseはマイナス
+        bool decimalFlag = false;
+        int decCount = 10;
+        // 無限ループさせる
+        while (true)
+		{
+            if(substList.Count > nowIndex)
+			{
+                // 数値だった場合
+                if (int.TryParse(substList[nowIndex], out int result))
+                {
+                    // 小数点対応
+                    if (decimalFlag)
+                    {
+                        value = value + (result / (float)decCount);
+                        decCount *= 10;
+                        nowIndex++;
+                        continue;
+                    }
+                    else
+                    {
+                        value = result;
+                    }
+                    // 次の値が、小数点だったら
+                    if (substList[nowIndex + 1] == ".")
+                    {
+                        decimalFlag = true;
+                        nowIndex += 2;
+                        continue;
+                    }
+                    break;
+                }
+                else
+                {
+                    if (decimalFlag)
+                    {
+                        return value;
+                    }
+                    // 数字ではないので、変数
+                    // すでに定義されている変数なのか
+                    string sv = DataTable.GetVariableValueData(substList[nowIndex]);
+                    if (sv != "")
+                    {
+                        value = int.Parse(sv);
+                        break;
+                    }
+                    else
+                    {
+                        // マイナス・プラスの符号の可能性があり
+                        switch (substList[nowIndex])
+                        {
+                            case "+":
+                                plasFlag = true;
+                                break;
+                            case "-":
+                                plasFlag = false;
+                                break;
+                            default:
+                                //エラー
+                                break;
+                        }
+                        nowIndex++;
+                    }
+                }
             }
             else
-            {
-                // エラー
-            }
+			{
+                return value;
+			}
         }
         nowIndex++;
+        if (!plasFlag)
+		{
+            value *= -1; 
+		}
         return value;
     }
 

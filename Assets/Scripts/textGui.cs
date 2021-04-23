@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Text.RegularExpressions;
+using TMPro;
 
 public class Syntax
 {
@@ -152,6 +153,9 @@ public class textGui : MonoBehaviour
 	[SerializeField]
 	GUISkin skin;
 
+	[SerializeField]
+	TextMeshProUGUI textPro;
+
 	string picupText;           // •\Ž¦—p
 	private string hideText = "";       // “ü—Í—p
 	
@@ -234,7 +238,6 @@ public class textGui : MonoBehaviour
 		Rect rect1 = new Rect(0 ,0, 960, 1080);
 
 		var backStyle = new GUIStyle(style);
-		backStyle.font = intext.font;
 		
 		backStyle.normal.textColor = Color.clear;
 		backStyle.hover.textColor = Color.clear;

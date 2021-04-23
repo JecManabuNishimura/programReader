@@ -112,20 +112,15 @@ public partial class ReadText : MonoBehaviour
     }
 	private void Update()
 	{
-        skipFLagObj.text = "skipFlag:" + skipFlag.ToString();
-        skipFLagObj.text = skipFLagObj.text + "\n";
-        skipFLagObj.text = skipFLagObj.text + "nextLoopFlag:" + nextLoopFlag.ToString();
-        skipFLagObj.text = skipFLagObj.text + "\n";
-        skipFLagObj.text = skipFLagObj.text + "loopStep:" + loopStep.ToString();
-        skipFLagObj.text = skipFLagObj.text + "\n";
-        skipFLagObj.text = skipFLagObj.text + "loopType:" + loopType.ToString();
-        skipFLagObj.text = skipFLagObj.text + "\n";
-        skipFLagObj.text = skipFLagObj.text + "leftValueName:" + leftValname.ToString();
-        skipFLagObj.text = skipFLagObj.text + "\n";
-        skipFLagObj.text = skipFLagObj.text + "substList:";
+        skipFLagObj.text =  "skipFlag:"         + skipFlag.ToString() + "\n";
+        skipFLagObj.text += "nextLoopFlag:"     + nextLoopFlag.ToString() + "\n";
+        skipFLagObj.text += "loopStep:"         + loopStep.ToString() + "\n";
+        skipFLagObj.text += "loopType:"         + loopType.ToString() + "\n";
+        skipFLagObj.text += "leftValueName:"    + leftValname.ToString() + "\n";
+        skipFLagObj.text += "substList:" ;
         foreach (var str in substList)
 		{
-            skipFLagObj.text = skipFLagObj.text + str.ToString() + "  ";
+            skipFLagObj.text += str.ToString() + "  ";
         }
         
     }
@@ -448,11 +443,23 @@ public partial class ReadText : MonoBehaviour
                         {
                             substList.Add(newSyntax[i].ToString());
                         }
+                        else if(substList.Count >= 1)
+						{
+                            // += -=　の場合
+                            if (substList[substList.Count - 1] == "-" || substList[substList.Count - 1] == "+")
+                            {
+                                leftValname = substList[substList.Count - 2];
+                            }
+                        }
                         else if(mold == "")
 						{
+                            
                             leftValname = substList[substList.Count - 1];
+
                             substList.RemoveAt(substList.Count - 1);
+
 						}
+                        
                         break;
                     case ',':
                         // カンマあり
@@ -466,7 +473,7 @@ public partial class ReadText : MonoBehaviour
                         {
                             if (substList.Count >= 1)
                             {
-                                if(SetOpeData(substList[substList.Count - 1]))
+                                if(SetOpeData(newSyntax[i].ToString()))
 								{
                                     break;
 								}
@@ -480,7 +487,7 @@ public partial class ReadText : MonoBehaviour
                         {
                             if (substList.Count >= 1)
                             {
-                                if (SetOpeData(substList[substList.Count - 1]))
+                                if (SetOpeData(newSyntax[i].ToString()))
                                 {
                                     break;
                                 }
@@ -495,6 +502,8 @@ public partial class ReadText : MonoBehaviour
                     case '&':
                     case '<':
                     case '>':
+                    case '%':
+                    case '.':
                         substList.Add(newSyntax[i].ToString());
                         
                         break;
@@ -682,27 +691,34 @@ public partial class ReadText : MonoBehaviour
         // インクリメント対応
         if (ope == "+" || ope == "-")
         {
-            List<string> tmp = new List<string>();
-            if (substList.Count >= 2)
-            {
-                // 後置型
-                if (CheckVarialbleData(substList[substList.Count - 2]))
+            if(substList[substList.Count - 1] == ope)
+			{
+                List<string> tmp = new List<string>();
+                if (substList.Count >= 2)
                 {
-                    string tmpName = substList[substList.Count - 2];
-                    substList[substList.Count - 2] = DataTable.GetVariableValueData(tmpName);
-                    substList.RemoveAt(substList.Count - 1);
-                    tmp.Add(tmpName); tmp.Add(ope); tmp.Add("1");
-                    Substitution(tmp, tmpName,true);
+                    // 後置型
+                    if (CheckVarialbleData(substList[substList.Count - 2]))
+                    {
+                        string tmpName = substList[substList.Count - 2];
+                        substList[substList.Count - 2] = DataTable.GetVariableValueData(tmpName);
+                        substList.RemoveAt(substList.Count - 1);
+                        tmp.Add(tmpName); tmp.Add(ope); tmp.Add("1");
+                        Substitution(tmp, tmpName, true);
+                    }
+                    result = true;
                 }
-                result = true;
+                else
+                {
+                    // 前置型
+                    // インクリメントが初めの場合
+                    prefixFlag = true;
+                }
             }
-            
             else
-            {
-                // 前置型
-                // インクリメントが初めの場合
-                prefixFlag = true;
-            }
+			{
+                // 符号の可能性あり
+                result = false;
+			}
         }
         return result;
     }
