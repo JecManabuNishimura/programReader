@@ -199,6 +199,8 @@ public partial class ReadText : MonoBehaviour
         ifFlag = false;
         substList.Clear();
         bracketsCount = 0;
+        arrayFlag = false;
+        arrayCount = 0;
     }
 
     static public void InitializeData()
@@ -208,6 +210,7 @@ public partial class ReadText : MonoBehaviour
         bracketsEndFlag = false;
         loopFlag = false;
         skipFlag = false;
+        arrayFlag = false;
         loopNestLevel.Clear();
         ResetData();
 	}
@@ -534,8 +537,8 @@ public partial class ReadText : MonoBehaviour
                         break;
                     case '[':
                         // 配列の場合
-                        // データ型＆変数名が定義されている場合のみ
-                        if(mold != "" && leftValname  != "")
+                        // (宣言）データ型＆変数名が定義されている場合のみ
+                        //if(mold != "" && leftValname  != "")
 						{
                             arrayFlag = true;
                         }
@@ -548,7 +551,17 @@ public partial class ReadText : MonoBehaviour
                             if (int.TryParse(substList[substList.Count - 1], out int result))
 							{
                                 arrayCount = result;
+                                substList.RemoveAt(substList.Count - 1);
                             }
+                            else
+							{
+                                // 変数が定義されている場合
+                                if(CheckVarialbleData(substList[substList.Count - 1]))
+								{
+                                    arrayCount =  int.Parse( DataTable.GetVariableValueData(substList[substList.Count - 1]));
+                                    substList.RemoveAt(substList.Count - 1);
+                                }
+							}
                         }
                         break;
                     case '*':
@@ -709,6 +722,7 @@ public partial class ReadText : MonoBehaviour
                             return; // 型指定の為、終了
                         }
                     }
+
                 }
                 else
                 {
@@ -822,8 +836,9 @@ public partial class ReadText : MonoBehaviour
                 DataTable.DeleteVariableData(index);
             }
 		}
+
     }
-    static void Substitution(List<string> list,string subName,bool flag = false)
+    static void Substitution(List<string> list, string subName, bool flag = false)
 	{
         if(!flag)
 		{
@@ -836,7 +851,7 @@ public partial class ReadText : MonoBehaviour
             // 変数名チェック
             if (CheckVarialbleData(subName))
             {
-                DataTable.SetVarialbleData(subName, val);
+                DataTable.SetVarialbleData(subName, val,arrayCount);
             }
             // 引数のチェック
             else if (DataTable.SetFuncVarialbleData(funcName, subName, val))
@@ -879,7 +894,7 @@ public partial class ReadText : MonoBehaviour
 
                     obj.GetComponent<SetVariData>().SetMolText(data.mold);
                     obj.GetComponent<SetVariData>().SetValNameText(data.name);
-                    obj.GetComponent<SetVariData>().SetValueText(data.value);
+                    
                     if(data.type == DataTable.DATA_TYPE.ARRAY)
 					{
                         foreach(var arrayData in data.array_data)
@@ -890,8 +905,11 @@ public partial class ReadText : MonoBehaviour
                             }
                             else
                                 obj.GetComponent<SetVariData>().CreateData(arrayData.ToString());
-
                         }
+                    }
+                    else
+					{
+                        obj.GetComponent<SetVariData>().SetValueText(data.value);
                     }
                     obj.transform.parent = tmpvTable.transform;
                 }

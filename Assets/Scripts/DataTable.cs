@@ -109,17 +109,26 @@ public static partial class DataTable
 	}
 
 
-	public static bool SetVarialbleData(string valName,string value)
+	public static bool SetVarialbleData(string valName,string value, int _arrayCount)
 	{
-
 		for(int i =0; i < variable.Count; i++)
 		{
 			if (variable[i].name == valName)
 			{
-				VARIABLE_DATA vd = variable[i];
-				vd.value = value;
-				variable[i] = vd;
-				return true;
+				if(variable[i].type == DATA_TYPE.ARRAY)
+				{
+					VARIABLE_DATA vd = variable[i];
+					vd.array_data[_arrayCount] = value;
+					variable[i] = vd;
+					return true;
+				}
+				else
+				{
+					VARIABLE_DATA vd = variable[i];
+					vd.value = value;
+					variable[i] = vd;
+					return true;
+				}
 			}
 		}
 		return false;

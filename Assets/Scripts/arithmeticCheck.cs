@@ -109,13 +109,14 @@ public class arithmeticCheck : MonoBehaviour
                     {
                         value = result;
                     }
-                    // 次の値が、小数点だったら
-                    if (substList[nowIndex + 1] == ".")
-                    {
-                        decimalFlag = true;
-                        nowIndex += 2;
-                        continue;
-                    }
+                    if(nowIndex < substList.Count - 1)
+                        // 次の値が、小数点だったら
+                        if (substList[nowIndex + 1] == ".")
+                        {
+                            decimalFlag = true;
+                            nowIndex += 2;
+                            continue;
+                        }
                     break;
                 }
                 else
