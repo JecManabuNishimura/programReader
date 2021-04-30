@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
-
+using System.Reflection;
+using System;
 
 public partial class ReadText : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public partial class ReadText : MonoBehaviour
     static bool skipFlag = false;                   // スキップフラグ
     static bool loopFlag = false;                    // ループ用フラグ
     static bool prefixFlag = false;                 // 前置フラグ
+    static bool arrayFlag = false;                  // 配列用フラグ
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
@@ -33,6 +35,7 @@ public partial class ReadText : MonoBehaviour
     static int allNestLevel = 0;
     static int skipNestLevel = -1;
     static int funcNestLevel = 0;
+    static int arrayCount = 0;                      // 配列数
     static Stack<LOOP_TYPE> loopNestLevel = new Stack<LOOP_TYPE>();
 
     public enum LOOP_TYPE_NAME
@@ -62,6 +65,8 @@ public partial class ReadText : MonoBehaviour
         public int line;
     }
 
+
+
 	enum IF_TYPE{
         NOT,
         EQUAL,
@@ -69,12 +74,15 @@ public partial class ReadText : MonoBehaviour
         SMALL
 	}
 
+    
+
     static IF_TYPE ifType;
 
     static Stack<SCOOP_NUM> stack = new Stack<SCOOP_NUM>();
     static Stack<int> nestStack = new Stack<int>();
 
     static List<string> substList = new List<string>();
+
 
     static public textGui.LOOP_NUMBER loopStep = textGui.LOOP_NUMBER.NONE;
 
@@ -88,6 +96,8 @@ public partial class ReadText : MonoBehaviour
     [SerializeField]
     GameObject funcObj;
     [SerializeField]
+    GameObject ArrayDataObj;
+    [SerializeField]
     Text skipFLagObj;
     //------------------------------------------------------------
 
@@ -98,17 +108,44 @@ public partial class ReadText : MonoBehaviour
     static GameObject tmpfunTable;
     static GameObject tmpfunObj;
     static GameObject tmpskipflagObj;
+    static GameObject tmpArrayDataObj;
     //------------------------------------------------------------
     static DataTable.FUNC_DATA fncData;
 
 
     void Start()
     {
-        tmpvObj = variaObj;
+		/*
+         * メモ：C＃でメモリーを扱いたい場合は、unsafeを使うとできる。
+         * unsafeオプションをONにする必要がある。
+         * Unity側のplayerSettingと新しくAssenblyDefinitionを追加する必要がある。
+         * ただし、アドレスは数字のみの表記になる
+        unsafe
+		{
+            
+            int* test = &test2;
+            Debug.Log((long)test);
+        }
+        
+        
+        unsafe
+		{
+            for(int i =0; i<10; i++)
+			{
+                fixed(int *p = &test[i])
+				{
+                    Debug.Log((int)p);
+                }
+			}
+		}
+        */
+
+		tmpvObj = variaObj;
         tmpvTable = variableTable;
 
         tmpfunObj = funcObj;
         tmpfunTable = funcTable;
+        tmpArrayDataObj = ArrayDataObj;
     }
 	private void Update()
 	{
@@ -495,6 +532,25 @@ public partial class ReadText : MonoBehaviour
                             substList.Add(newSyntax[i].ToString());
                         }
                         break;
+                    case '[':
+                        // 配列の場合
+                        // データ型＆変数名が定義されている場合のみ
+                        if(mold != "" && leftValname  != "")
+						{
+                            arrayFlag = true;
+                        }
+                        break;
+                    case ']':
+                        // 配列の終わり
+                        if(arrayFlag)
+						{
+                            // 数値の場合
+                            if (int.TryParse(substList[substList.Count - 1], out int result))
+							{
+                                arrayCount = result;
+                            }
+                        }
+                        break;
                     case '*':
                     case '/':
                     case '!':
@@ -595,7 +651,7 @@ public partial class ReadText : MonoBehaviour
                     // 変数名
                     else
                     {
-                        DataTable.VARIABLE_DATA vd;
+                        DataTable.VARIABLE_DATA vd = new DataTable.VARIABLE_DATA();
                         vd.name = newSyntax;
                         vd.mold = mold;
                         vd.value = "0";
@@ -653,13 +709,6 @@ public partial class ReadText : MonoBehaviour
                             return; // 型指定の為、終了
                         }
                     }
-                    /*
-                    // 変数名が設定されていない場合
-                    if (leftValname == "")
-                    {
-                        leftValname = newSyntax;
-                        substList.RemoveAt(substList.Count - 1);
-                    }*/
                 }
                 else
                 {
@@ -734,20 +783,33 @@ public partial class ReadText : MonoBehaviour
         }
         return false;
     }
+    static bool CheckReservedWordType(string tex)
+    {
+        foreach (var wd in cName)
+        {
+            if (wd == tex)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     
+
     // 変数宣言
     static void VariableDeclaration(string name,string setMold)
 	{
         if(name != "" && setMold != "")
 		{
-            DataTable.VARIABLE_DATA ValData;
+            DataTable.VARIABLE_DATA ValData = new DataTable.VARIABLE_DATA() ;
             ValData.name = name;
             ValData.mold = setMold;
             ValData.value = "0";
             ValData.scoopNum = allNestLevel;
-            DataTable.AddVariableData(ValData);
+            // 配列ONの場合
+            if(arrayFlag)   DataTable.AddVariableData(ValData, DataTable.DATA_TYPE.ARRAY, arrayCount);
+            else            DataTable.AddVariableData(ValData);
         }
-        
     }
 
     static void CheckVariableIsScoop(string name,int scoop)
@@ -814,9 +876,23 @@ public partial class ReadText : MonoBehaviour
                 foreach(var data in DataTable.GetVarialbleDataList())
 				{
                     var obj = Instantiate(tmpvObj);
+
                     obj.GetComponent<SetVariData>().SetMolText(data.mold);
                     obj.GetComponent<SetVariData>().SetValNameText(data.name);
                     obj.GetComponent<SetVariData>().SetValueText(data.value);
+                    if(data.type == DataTable.DATA_TYPE.ARRAY)
+					{
+                        foreach(var arrayData in data.array_data)
+						{
+                            if(arrayData == null)
+							{
+                                obj.GetComponent<SetVariData>().CreateData("null");
+                            }
+                            else
+                                obj.GetComponent<SetVariData>().CreateData(arrayData.ToString());
+
+                        }
+                    }
                     obj.transform.parent = tmpvTable.transform;
                 }
             }

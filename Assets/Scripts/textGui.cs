@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Text.RegularExpressions;
-using TMPro;
+//using TMPro;
 
 public class Syntax
 {
@@ -153,8 +153,8 @@ public class textGui : MonoBehaviour
 	[SerializeField]
 	GUISkin skin;
 
-	[SerializeField]
-	TextMeshProUGUI textPro;
+	//[SerializeField]
+	//TextMeshProUGUI textPro;
 
 	string picupText;           // •\Ž¦—p
 	private string hideText = "";       // “ü—Í—p
@@ -202,11 +202,6 @@ public class textGui : MonoBehaviour
 	{
 		Syntax.Init();
 		highlighter = code => code;
-	}
-
-	private void Update()
-	{
-		
 	}
 	
 	private void OnGUI()

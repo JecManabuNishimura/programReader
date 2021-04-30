@@ -1,5 +1,67 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4369728942574883843
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1649291158239733736}
+  - component: {fileID: 8435600629777851882}
+  m_Layer: 5
+  m_Name: arrayBox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1649291158239733736
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4369728942574883843}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 8335118903427005569}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: 0.06625366, y: 29.611}
+  m_SizeDelta: {x: -1.0899963, y: 58.779}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &8435600629777851882
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4369728942574883843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1 &4845270345265001951
 GameObject:
   m_ObjectHideFlags: 0
@@ -32,10 +94,10 @@ RectTransform:
   m_Father: {fileID: 8335118903427005569}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 177.26, y: 0.12899017}
-  m_SizeDelta: {x: 140.52, y: 0.258}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 177.26001, y: -28.871}
+  m_SizeDelta: {x: -355.47998, y: 58.258}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8151420663703508438
 CanvasRenderer:
@@ -113,10 +175,10 @@ RectTransform:
   m_Father: {fileID: 8335118903427005569}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 5.4722, y: -0.12900925}
-  m_SizeDelta: {x: 203.06, y: 0.258}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 5.4721985, y: -29}
+  m_SizeDelta: {x: -292.94, y: 57.999}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4041120349214830835
 CanvasRenderer:
@@ -194,10 +256,10 @@ RectTransform:
   m_Father: {fileID: 8335118903427005569}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 75.798874, y: 0.0010681152}
-  m_SizeDelta: {x: 151.3297, y: 0.2594}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -171.70113, y: -28.934}
+  m_SizeDelta: {x: -343.6703, y: 58.13}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4474052754022061253
 CanvasRenderer:
@@ -272,13 +334,14 @@ RectTransform:
   - {fileID: 7429211747852331055}
   - {fileID: 7373651745074913779}
   - {fileID: 6665668575695610299}
+  - {fileID: 1649291158239733736}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 70.187744, y: 0}
-  m_SizeDelta: {x: 495.0429, y: 54.2663}
+  m_AnchoredPosition: {x: 70.187744, y: -31.3879}
+  m_SizeDelta: {x: 495.0429, y: 117.042}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &450395318162720022
 MonoBehaviour:
@@ -295,3 +358,5 @@ MonoBehaviour:
   moldText: {fileID: 6665946279846895037}
   valNameText: {fileID: 4059154497418560450}
   valueText: {fileID: 555502938788183118}
+  arrayObj: {fileID: 4369728942574883843}
+  dataObj: {fileID: 8749072919513828902, guid: 80e3b60de850c43468c5172584591e02, type: 3}

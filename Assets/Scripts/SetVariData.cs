@@ -13,7 +13,21 @@ public class SetVariData : MonoBehaviour
 
     [SerializeField]
     Text valueText;
-    
+
+    [SerializeField]
+    private GameObject arrayObj;
+
+    [SerializeField]
+    private GameObject dataObj;
+
+    public void CreateData(string data)
+    {
+        var tmp = Instantiate(dataObj);
+        tmp.GetComponent<Text>().text = data;
+        tmp.transform.parent = arrayObj.transform;
+
+    }
+
     public void SetMolText(string tex)
 	{
         moldText.text = tex;

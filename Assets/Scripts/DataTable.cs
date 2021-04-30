@@ -4,12 +4,20 @@ using System.Linq;
 
 public static partial class DataTable
 {
+	// INT = 単体
+	// PTR = アドレス
+	// ARRAY = 配列
+	public enum DATA_TYPE { INT, PTR, ARRAY };
 	public struct VARIABLE_DATA
 	{
+		
+		public DATA_TYPE type;
 		public string name;
 		public string mold;
 		public string value;
 		public int scoopNum;
+		public int array_size;
+		public object[] array_data;
 	}
 	public struct FUNC_DATA
 	{
@@ -19,9 +27,9 @@ public static partial class DataTable
 		public string returnName;
 		public List<VARIABLE_DATA> getVariable;
 	}
-
-    static List<FUNC_DATA> function = new List<FUNC_DATA>();
-	static List<VARIABLE_DATA> variable = new List<VARIABLE_DATA>();
+	
+	static List<FUNC_DATA> function = new List<FUNC_DATA>();
+	static List<VARIABLE_DATA> variable = new List<VARIABLE_DATA>(); 
 
 	public static void CrearData()
 	{
@@ -56,17 +64,25 @@ public static partial class DataTable
 		}
 		variable.RemoveAt(index);
 	}
+
 	public static void DeleteVariableData(int index)
 	{
 		variable.RemoveAt(index);
 	}
+
 	public static void AddFuncData(FUNC_DATA fnc)
 	{
 		function.Add(fnc);
 	}
 
-	public static void AddVariableData(VARIABLE_DATA val)
+	public static void AddVariableData(VARIABLE_DATA val, DATA_TYPE type = DATA_TYPE.INT, int arraySize = 0)
 	{
+		val.type = type;
+		if(type == DATA_TYPE.ARRAY)
+		{
+			// 動的に配列を確保
+			val.array_data = new object[arraySize];
+		}
 		variable.Add(val);
 	}
 
@@ -137,6 +153,23 @@ public static partial class DataTable
 	public static int GetFunctionNum()
 	{
 		return function.Count;
+	}
+	static int CheckDataSize(string tex)
+	{
+		int num;
+		switch (tex)
+		{
+			case "int": num = sizeof(int); break;
+			case "float": num = sizeof(float); break;
+			case "double": num = sizeof(double); break;
+			case "bool": num = sizeof(int); break;
+			case "char": num = sizeof(char); break;
+			default:
+				num = 0;
+				break;
+		}
+
+		return num;
 	}
 }
 public static partial class DataTable
