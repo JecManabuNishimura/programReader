@@ -82,6 +82,10 @@ public static partial class DataTable
 		{
 			// “®“I‚É”z—ñ‚ðŠm•Û
 			val.array_data = new object[arraySize];
+			for (int i = 0; i < val.array_data.Length; i++)
+			{
+				val.array_data[i] = "null";
+			}
 		}
 		variable.Add(val);
 	}

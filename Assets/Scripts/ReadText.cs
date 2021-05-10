@@ -98,6 +98,8 @@ public partial class ReadText : MonoBehaviour
     [SerializeField]
     GameObject ArrayDataObj;
     [SerializeField]
+    GameObject ArrayListObj;
+    [SerializeField]
     Text skipFLagObj;
     //------------------------------------------------------------
 
@@ -109,6 +111,7 @@ public partial class ReadText : MonoBehaviour
     static GameObject tmpfunObj;
     static GameObject tmpskipflagObj;
     static GameObject tmpArrayDataObj;
+    static GameObject tmpArrayListObj;
     //------------------------------------------------------------
     static DataTable.FUNC_DATA fncData;
 
@@ -145,7 +148,8 @@ public partial class ReadText : MonoBehaviour
 
         tmpfunObj = funcObj;
         tmpfunTable = funcTable;
-        tmpArrayDataObj = ArrayDataObj;
+        tmpArrayDataObj = ArrayDataObj;     
+        tmpArrayListObj = ArrayListObj;
     }
 	private void Update()
 	{
@@ -167,6 +171,7 @@ public partial class ReadText : MonoBehaviour
         "int",
         "float",
         "double",
+        "bool",
         "void"
     };
 
@@ -890,28 +895,28 @@ public partial class ReadText : MonoBehaviour
             {
                 foreach(var data in DataTable.GetVarialbleDataList())
 				{
-                    var obj = Instantiate(tmpvObj);
-
-                    obj.GetComponent<SetVariData>().SetMolText(data.mold);
-                    obj.GetComponent<SetVariData>().SetValNameText(data.name);
-                    
-                    if(data.type == DataTable.DATA_TYPE.ARRAY)
+                    if (data.type == DataTable.DATA_TYPE.ARRAY)
 					{
-                        foreach(var arrayData in data.array_data)
-						{
-                            if(arrayData == null)
-							{
-                                obj.GetComponent<SetVariData>().CreateData("null");
-                            }
-                            else
-                                obj.GetComponent<SetVariData>().CreateData(arrayData.ToString());
+                        var tmpListObj = Instantiate(tmpArrayListObj);
+                        tmpListObj.transform.parent = tmpvTable.transform;
+                        int counter = 0;
+                        foreach (var arrayData in data.array_data)
+                        {
+                            var arrayObj = Instantiate(tmpArrayDataObj);
+                            var objVar = arrayObj.GetComponent<SetVariData>();
+                            objVar.SetArrayNumText(counter.ToString());
+                            SetAllVarData(objVar, data.name, data.mold, arrayData.ToString());
+                            counter++;
+                            arrayObj.transform.parent = tmpListObj.transform;
                         }
                     }
                     else
 					{
-                        obj.GetComponent<SetVariData>().SetValueText(data.value);
+                        var obj = Instantiate(tmpvObj);
+                        var objVar = obj.GetComponent<SetVariData>();
+                        SetAllVarData(objVar, data.name, data.mold, data.value);
+                        obj.transform.parent = tmpvTable.transform;
                     }
-                    obj.transform.parent = tmpvTable.transform;
                 }
             }
         }
@@ -948,6 +953,13 @@ public partial class ReadText : MonoBehaviour
         }
 		#endregion
 	}
+
+    static void SetAllVarData(SetVariData obj, string varName,string moldName, string value)
+	{
+        obj.SetMolText(moldName);
+        obj.SetValNameText(varName);
+        obj.SetValueText(value);
+    }
 
     static bool CheckVarialbleData(string val)
 	{

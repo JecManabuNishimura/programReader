@@ -845,9 +845,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   variableTable: {fileID: 1884098311}
   funcTable: {fileID: 1423563895}
-  variaObj: {fileID: 8463844258143408931, guid: a39b850c1be198e4f8924cca50c36fa6, type: 3}
+  variaObj: {fileID: 8050595121700473993, guid: 8c836871d82d1c2468d261fdda855400, type: 3}
   funcObj: {fileID: 953408134267762409, guid: 38cd3b8c135ac244784b26e972822fbb, type: 3}
-  ArrayDataObj: {fileID: 8749072919513828902, guid: 80e3b60de850c43468c5172584591e02, type: 3}
+  ArrayDataObj: {fileID: 394456962744484201, guid: fa7705046b646fe42893bd8174ea322f, type: 3}
+  ArrayListObj: {fileID: 3483917752085492767, guid: 09b5762ab8ca7ba45bdc8c3a2924d8ef, type: 3}
   skipFLagObj: {fileID: 1951613327}
 --- !u!4 &950033014
 Transform:
@@ -1412,8 +1413,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 582.49677, y: 269.99994}
-  m_SizeDelta: {x: 484.1135, y: 540}
+  m_AnchoredPosition: {x: 648.36, y: 269.99994}
+  m_SizeDelta: {x: 623.28, y: 540}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1884098313
 MonoBehaviour:

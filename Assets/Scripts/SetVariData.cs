@@ -15,6 +15,9 @@ public class SetVariData : MonoBehaviour
     Text valueText;
 
     [SerializeField]
+    Text arrayNum;
+
+    [SerializeField]
     private GameObject arrayObj;
 
     [SerializeField]
@@ -22,12 +25,18 @@ public class SetVariData : MonoBehaviour
 
     public void CreateData(string data)
     {
-        var tmp = Instantiate(dataObj);
-        tmp.GetComponent<Text>().text = data;
-        tmp.transform.parent = arrayObj.transform;
-
+        if(dataObj != null)
+		{
+            var tmp = Instantiate(dataObj);
+            tmp.GetComponent<Text>().text = data;
+            if (arrayObj != null)
+                tmp.transform.parent = arrayObj.transform;
+        }
     }
-
+    public void SetArrayNumText(string tex)
+    {
+        arrayNum.text = tex;
+    }
     public void SetMolText(string tex)
 	{
         moldText.text = tex;
