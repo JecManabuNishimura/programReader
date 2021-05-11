@@ -16,7 +16,7 @@ public static partial class DataTable
 		public string mold;
 		public string value;
 		public int scoopNum;
-		public int array_size;
+		public int[] array_size;
 		public object[] array_data;
 	}
 	public struct FUNC_DATA
@@ -30,7 +30,6 @@ public static partial class DataTable
 	
 	static List<FUNC_DATA> function = new List<FUNC_DATA>();
 	static List<VARIABLE_DATA> variable = new List<VARIABLE_DATA>(); 
-
 	public static void CrearData()
 	{
 		variable.Clear();
@@ -51,7 +50,7 @@ public static partial class DataTable
 
 	public static void DeleteVariableData(string name)
 	{
-		int i =0;
+		int i = 0;
 		int index = 0;
 		foreach(var data in variable)
 		{
@@ -75,18 +74,31 @@ public static partial class DataTable
 		function.Add(fnc);
 	}
 
-	public static void AddVariableData(VARIABLE_DATA val, DATA_TYPE type = DATA_TYPE.INT, int arraySize = 0)
+	public static void AddVariableData(VARIABLE_DATA val, List<int> arraySize)
 	{
-		val.type = type;
-		if(type == DATA_TYPE.ARRAY)
+		val.type = DATA_TYPE.ARRAY;
+		int arraynum = 1;
+		int count = 0;
+		val.array_size = new int[arraySize.Count];
+		// 動的に配列を確保
+		foreach (var tmp in arraySize)
 		{
-			// 動的に配列を確保
-			val.array_data = new object[arraySize];
-			for (int i = 0; i < val.array_data.Length; i++)
-			{
-				val.array_data[i] = "null";
-			}
+			arraynum *= tmp;
+			val.array_size[count] = tmp;
+			count++;
 		}
+		
+		val.array_data = new object[arraynum];
+		for (int i = 0; i < val.array_data.Length; i++)
+		{
+			val.array_data[i] = "null";
+		}
+		variable.Add(val);
+	}
+	public static void AddVariableData(VARIABLE_DATA val)
+	{
+		
+		val.type = DATA_TYPE.INT;
 		variable.Add(val);
 	}
 
@@ -113,7 +125,7 @@ public static partial class DataTable
 	}
 
 
-	public static bool SetVarialbleData(string valName,string value, int _arrayCount)
+	public static bool SetVarialbleData(string valName,string value, List<int> _arrayCount)
 	{
 		for(int i =0; i < variable.Count; i++)
 		{
@@ -122,7 +134,8 @@ public static partial class DataTable
 				if(variable[i].type == DATA_TYPE.ARRAY)
 				{
 					VARIABLE_DATA vd = variable[i];
-					vd.array_data[_arrayCount] = value;
+					int number = _arrayCount.Count;
+					vd.array_data[CheckArrayAddress(vd,_arrayCount,ref number)] = value;
 					variable[i] = vd;
 					return true;
 				}
@@ -136,6 +149,43 @@ public static partial class DataTable
 			}
 		}
 		return false;
+	}
+
+	public static string ReturnArrayAddress(VARIABLE_DATA vd, List<int> _arrayCount)
+	{
+		// 2次元配列以上の場合
+		if(vd.array_size.Length != 1)
+		{
+
+		}
+	}
+
+	public static int CheckArrayAddress(VARIABLE_DATA vd, List<int> _arrayCount, ref int number)
+	{
+		int calc = 1;
+		
+		if(number != vd.array_size.Length)
+		{
+			for (int i = number; i < vd.array_size.Length; i++)
+			{
+				calc *= vd.array_size[i];
+			}
+			calc *= _arrayCount[number-1];
+		}
+		else
+		{
+			calc = _arrayCount[number-1];
+		}
+		number--;
+		if (number == 0)
+		{
+			return calc;
+		}
+		else
+		{
+			calc += CheckArrayAddress(vd, _arrayCount, ref number);
+			return calc;
+		}
 	}
 
 	public static bool SetFuncVarialbleData(string funcName,string valName,string value)

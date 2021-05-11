@@ -35,7 +35,7 @@ public partial class ReadText : MonoBehaviour
     static int allNestLevel = 0;
     static int skipNestLevel = -1;
     static int funcNestLevel = 0;
-    static int arrayCount = 0;                      // 配列数
+    static List<int> arrayCountList = new List<int>();                      // 配列数
     static Stack<LOOP_TYPE> loopNestLevel = new Stack<LOOP_TYPE>();
 
     public enum LOOP_TYPE_NAME
@@ -205,7 +205,7 @@ public partial class ReadText : MonoBehaviour
         substList.Clear();
         bracketsCount = 0;
         arrayFlag = false;
-        arrayCount = 0;
+        arrayCountList.Clear();
     }
 
     static public void InitializeData()
@@ -555,7 +555,7 @@ public partial class ReadText : MonoBehaviour
                             // 数値の場合
                             if (int.TryParse(substList[substList.Count - 1], out int result))
 							{
-                                arrayCount = result;
+                                arrayCountList.Add(result);
                                 substList.RemoveAt(substList.Count - 1);
                             }
                             else
@@ -563,7 +563,7 @@ public partial class ReadText : MonoBehaviour
                                 // 変数が定義されている場合
                                 if(CheckVarialbleData(substList[substList.Count - 1]))
 								{
-                                    arrayCount =  int.Parse( DataTable.GetVariableValueData(substList[substList.Count - 1]));
+                                    arrayCountList.Add(int.Parse( DataTable.GetVariableValueData(substList[substList.Count - 1])));
                                     substList.RemoveAt(substList.Count - 1);
                                 }
 							}
@@ -826,7 +826,7 @@ public partial class ReadText : MonoBehaviour
             ValData.value = "0";
             ValData.scoopNum = allNestLevel;
             // 配列ONの場合
-            if(arrayFlag)   DataTable.AddVariableData(ValData, DataTable.DATA_TYPE.ARRAY, arrayCount);
+            if(arrayFlag)   DataTable.AddVariableData(ValData, arrayCountList);
             else            DataTable.AddVariableData(ValData);
         }
     }
@@ -856,7 +856,7 @@ public partial class ReadText : MonoBehaviour
             // 変数名チェック
             if (CheckVarialbleData(subName))
             {
-                DataTable.SetVarialbleData(subName, val,arrayCount);
+                DataTable.SetVarialbleData(subName, val,arrayCountList);
             }
             // 引数のチェック
             else if (DataTable.SetFuncVarialbleData(funcName, subName, val))

@@ -17,22 +17,7 @@ public class SetVariData : MonoBehaviour
     [SerializeField]
     Text arrayNum;
 
-    [SerializeField]
-    private GameObject arrayObj;
 
-    [SerializeField]
-    private GameObject dataObj;
-
-    public void CreateData(string data)
-    {
-        if(dataObj != null)
-		{
-            var tmp = Instantiate(dataObj);
-            tmp.GetComponent<Text>().text = data;
-            if (arrayObj != null)
-                tmp.transform.parent = arrayObj.transform;
-        }
-    }
     public void SetArrayNumText(string tex)
     {
         arrayNum.text = tex;
