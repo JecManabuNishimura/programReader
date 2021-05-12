@@ -151,13 +151,33 @@ public static partial class DataTable
 		return false;
 	}
 
-	public static string ReturnArrayAddress(VARIABLE_DATA vd, List<int> _arrayCount)
+	public static string GetArrayAddress(VARIABLE_DATA vd, int eleNum)
 	{
-		// 2ŸŒ³”z—ñˆÈã‚Ìê‡
-		if(vd.array_size.Length != 1)
+		int mod = eleNum;
+		int number = 0;
+		var str = ReturnArrayAddress(vd, ref mod, ref number);
+		return str;
+	}
+	
+	
+	public static string ReturnArrayAddress(VARIABLE_DATA vd, ref int mod, ref int number)
+	{
+		if(number == vd.array_size.Length - 1)
 		{
-
+			return "[" + mod + "]";
 		}
+		
+		int calc = 1;
+		for (int i=number + 1; i< vd.array_size.Length;i++)
+		{
+			calc *= vd.array_size[i];
+		}
+		int div = mod / calc;
+		mod = mod % calc;
+
+		number++;
+		return "[" + div + "]" + ReturnArrayAddress(vd,ref mod, ref number);
+
 	}
 
 	public static int CheckArrayAddress(VARIABLE_DATA vd, List<int> _arrayCount, ref int number)

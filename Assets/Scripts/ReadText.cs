@@ -904,7 +904,7 @@ public partial class ReadText : MonoBehaviour
                         {
                             var arrayObj = Instantiate(tmpArrayDataObj);
                             var objVar = arrayObj.GetComponent<SetVariData>();
-                            objVar.SetArrayNumText(counter.ToString());
+                            objVar.SetArrayNumText(DataTable.GetArrayAddress(data,counter));
                             SetAllVarData(objVar, data.name, data.mold, arrayData.ToString());
                             counter++;
                             arrayObj.transform.parent = tmpListObj.transform;

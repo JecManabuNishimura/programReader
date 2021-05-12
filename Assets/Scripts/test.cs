@@ -27,9 +27,4 @@ public class test : MonoBehaviour
         content.text = "test";
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }
