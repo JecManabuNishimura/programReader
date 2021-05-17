@@ -134,8 +134,12 @@ public static partial class DataTable
 				if(variable[i].type == DATA_TYPE.ARRAY)
 				{
 					VARIABLE_DATA vd = variable[i];
-					int number = _arrayCount.Count;
-					vd.array_data[CheckArrayAddress(vd,_arrayCount,ref number)] = value;
+					// 要素番号が存在するか確認
+					if(!CheckArrayNumber(vd,_arrayCount))
+					{
+						return false;
+					}
+					vd.array_data[(int)GetOneArrayNumber(vd,_arrayCount)] = value;
 					variable[i] = vd;
 					return true;
 				}
@@ -149,6 +153,32 @@ public static partial class DataTable
 			}
 		}
 		return false;
+	}
+
+	public static bool CheckArrayNumber(VARIABLE_DATA vd, List<int> _arrayCount)
+	{
+		for (int ci = 0; ci < _arrayCount.Count; ci++)
+		{
+
+			if (_arrayCount[ci] >= vd.array_size[ci] || _arrayCount[ci] < 0)
+			{
+				// そんな配列は存在しないので、エラー
+				Debug.LogError("存在しない配列を番号を参照:" + vd.name);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static object GetOneArrayNumber(VARIABLE_DATA vd, List<int> _arrayCount)
+	{
+		int number = _arrayCount.Count;
+		return ChengeOneArray(vd, _arrayCount, ref number);
+	}
+
+	public static object GetOneArrayNumberData(VARIABLE_DATA vd, List<int> _arrayCount)
+	{
+		return vd.array_data[(int)GetOneArrayNumber(vd,_arrayCount)];
 	}
 
 	public static string GetArrayAddress(VARIABLE_DATA vd, int eleNum)
@@ -180,7 +210,7 @@ public static partial class DataTable
 
 	}
 
-	public static int CheckArrayAddress(VARIABLE_DATA vd, List<int> _arrayCount, ref int number)
+	public static int ChengeOneArray(VARIABLE_DATA vd, List<int> _arrayCount, ref int number)
 	{
 		int calc = 1;
 		
@@ -203,7 +233,7 @@ public static partial class DataTable
 		}
 		else
 		{
-			calc += CheckArrayAddress(vd, _arrayCount, ref number);
+			calc += ChengeOneArray(vd, _arrayCount, ref number);
 			return calc;
 		}
 	}

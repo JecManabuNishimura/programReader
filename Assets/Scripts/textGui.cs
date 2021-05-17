@@ -240,6 +240,7 @@ public class textGui : MonoBehaviour
 		backStyle.focused.textColor = Color.clear;
 		
 		var backGroundColor = Color.clear;
+		
 		GUI.backgroundColor = backGroundColor;
 		
 		Event ev = Event.current;
@@ -272,7 +273,7 @@ public class textGui : MonoBehaviour
 			code = code.Insert(te.cursorIndex, "   ");
 			tabIndex = te.cursorIndex + 3;
 		}
-		if ((Event.current.keyCode == KeyCode.F10) && (Event.current.type == EventType.KeyUp))
+		if (((Event.current.keyCode == KeyCode.F10) && (Event.current.type == EventType.KeyUp)) || ReadText.skipFlag)
 		{
 			ReadTextDataTest(te, ev);
 		}
