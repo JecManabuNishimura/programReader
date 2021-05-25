@@ -169,6 +169,8 @@ public class textGui : MonoBehaviour
 	bool tabFlag = false;
 	int tabIndex = 0;
 
+	Stack<int> funcIndex = new Stack<int>();
+
 	Stack<LOOP_INDEX> loopIndex = new Stack<LOOP_INDEX>();
 	int loopCount = 0;
 	static  public LOOP_NUMBER loopStepNumber = LOOP_NUMBER.NONE;
@@ -193,9 +195,6 @@ public class textGui : MonoBehaviour
 		public int termIndex;
 		public int nextIndex;
 		public int startIndex;
-
-
-		
 	}
 
 	private void Start()
@@ -331,6 +330,13 @@ public class textGui : MonoBehaviour
 			li.startIndex = 0;
 			li.StepNumber = LOOP_NUMBER.NONE;
 			loopIndex.Push(li);
+		}
+		else if(ReadText.searchFuncFlag)
+		{
+			if(funcIndex.Peek() == te.cursorIndex)
+			{
+				funcIndex.Push(te.cursorIndex);
+			}
 		}
 		// ÉãÅ[ÉvëŒâû
 		if (ReadText.nextLoopFlag)

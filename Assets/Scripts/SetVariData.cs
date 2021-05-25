@@ -22,9 +22,9 @@ public class SetVariData : MonoBehaviour
     {
         arrayNum.text = tex;
     }
-    public void SetMolText(string tex)
+    public void SetMolText(object tex)
 	{
-        moldText.text = tex;
+        moldText.text = tex.ToString();
 	}
 
     public void SetValNameText(string tex)
@@ -32,9 +32,9 @@ public class SetVariData : MonoBehaviour
         valNameText.text = tex;
 	}
 
-    public void SetValueText(string tex)
+    public void SetValueText(object tex)
 	{
-        valueText.text = tex;
+        valueText.text = tex.ToString();
 	}
 
 }

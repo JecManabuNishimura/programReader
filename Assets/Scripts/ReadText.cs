@@ -13,20 +13,22 @@ public partial class ReadText : MonoBehaviour
     static string leftValname = "";                     // 左辺変数
     static string switchLeftName = "";              // switch用の比較データ
     static string caseName = "";                    // case の値
+    static string callFuncName = "";                // 呼び出し関数名
 
     static bool argumentFlag = false;               // 引数フラグ
     static bool argumentCanmaFlag = true;           // 引数カンマフラグ
     static bool substitutionFlag = false;           // 代入フラグ
     static bool ifFlag = false;                     // if文フラグ
     static bool ifCheckFlag = false;                // if文判定後フラグ
-    static public bool skipFlag = false;                   // スキップフラグ
+    static public bool skipFlag = false;            // スキップフラグ
     static bool switchFlag = false;                 // スイッチフラグ
-    static bool loopFlag = false;                    // ループ用フラグ
+    static bool loopFlag = false;                   // ループ用フラグ
     static bool prefixFlag = false;                 // 前置フラグ
     static bool arrayFlag = false;                  // 配列用フラグ
     static bool nextCaseFlag = false;               // case用のフラグ
     static bool breakFlag = false;                  // break用フラグ
     static bool argumentpassFlag = false;           // 引数開始フラグ
+    static public bool searchFuncFlag = false;      // 関数検索開始フラグ
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
@@ -44,7 +46,14 @@ public partial class ReadText : MonoBehaviour
     static List<int> arrayCountList = new List<int>();                      // 配列数
     static Stack<LOOP_TYPE> loopNestLevel = new Stack<LOOP_TYPE>();
     static Stack<int> switchNestLevel = new Stack<int>();
-    static Queue<object> argumentPass = new Queue<object>();
+    static Queue<ARGUMENT_PASS_DATA> argumentPass = new Queue<ARGUMENT_PASS_DATA>();
+
+    public struct ARGUMENT_PASS_DATA
+	{
+        public object pass;             // 値
+        public object mold;             // 型
+	}
+
 
     public enum LOOP_TYPE_NAME
     {
@@ -359,6 +368,7 @@ public partial class ReadText : MonoBehaviour
 							{
                                 if(CheckFunctionData(substList[substList.Count - 1],out string name))
 								{
+                                    callFuncName = name;
                                     argumentpassFlag = true;
                                 }
 							}
@@ -437,6 +447,15 @@ public partial class ReadText : MonoBehaviour
                             }
                             break;
                         }
+                        // 関数呼び出し先を探す
+                        else if(searchFuncFlag)
+						{
+                            // 関数呼び出し名が同じなら
+                            if(callFuncName == leftValname)
+							{
+                                
+							}
+						}
                         //ResetData();   // 一旦コメントアウト
                         break;
                     case '{':
@@ -616,7 +635,7 @@ public partial class ReadText : MonoBehaviour
                                 // 変数が定義されている場合
                                 if(CheckVarialbleData(substList[substList.Count - 1]))
 								{
-                                    arrayCountList.Add(int.Parse( DataTable.GetVariableValueData(substList[substList.Count - 1])));
+                                    arrayCountList.Add(int.Parse( (string)DataTable.GetVariableValueData(substList[substList.Count - 1])));
                                     substList.RemoveAt(substList.Count - 1);
                                 }
 							}
@@ -649,7 +668,7 @@ public partial class ReadText : MonoBehaviour
                                 // 変数が定義されている場合
                                 if (CheckVarialbleData(substList[substList.Count - 1]))
                                 {
-                                    caseName = DataTable.GetVariableValueData(substList[substList.Count - 1]);
+                                    caseName = (string)DataTable.GetVariableValueData(substList[substList.Count - 1]);
                                 }
                             }
                             // スイッチ条件
@@ -803,7 +822,7 @@ public partial class ReadText : MonoBehaviour
                         Substitution(tmp, newSyntax,true);
                         substList.RemoveAt(substList.Count - 3);
                         substList.RemoveAt(substList.Count - 2);
-                        substList[substList.Count - 1] = DataTable.GetVariableValueData(newSyntax);
+                        substList[substList.Count - 1] = (string)DataTable.GetVariableValueData(newSyntax);
                     }
                     else
                     {
@@ -830,7 +849,7 @@ public partial class ReadText : MonoBehaviour
                                 // 変数が定義されている場合
                                 if (CheckVarialbleData(newSyntax))
                                 {
-                                    name = DataTable.GetVariableValueData(substList[substList.Count - 1]);
+                                    name = (string)DataTable.GetVariableValueData(substList[substList.Count - 1]);
                                 }
                             }
                             switchLeftName = name;
@@ -886,6 +905,7 @@ public partial class ReadText : MonoBehaviour
 
     static void SetArgumentPass()
 	{
+        ARGUMENT_PASS_DATA apd = new ARGUMENT_PASS_DATA();
         // 変数があるかチェック
         if (CheckVarialbleData(substList[substList.Count - 1], out DataTable.VARIABLE_DATA vd))
         {
@@ -895,17 +915,23 @@ public partial class ReadText : MonoBehaviour
                 if (CheckVarialbleData(vd.name, arrayCountList, out vd))
                 {
                     substList.RemoveAt(substList.Count - 1);
-                    argumentPass.Enqueue(GetArrayData(vd, arrayCountList));
+                    apd.pass = GetArrayData(vd, arrayCountList);
+                    apd.mold = vd.mold;
+                    argumentPass.Enqueue(apd);
                 }
             }
             else
             {
-                argumentPass.Enqueue(vd.value);
+                apd.pass = vd.value;
+                apd.mold = vd.mold;
+                argumentPass.Enqueue(apd);
             }
         }
         else
         {
-            argumentPass.Enqueue(substList[substList.Count - 1]);
+            apd.pass = substList[substList.Count - 1];
+            apd.mold = "int";
+            argumentPass.Enqueue(apd);
         }
     }
 
@@ -926,7 +952,7 @@ public partial class ReadText : MonoBehaviour
                     if (CheckVarialbleData(substList[substList.Count - 2]))
                     {
                         string tmpName = substList[substList.Count - 2];
-                        substList[substList.Count - 2] = DataTable.GetVariableValueData(tmpName);
+                        substList[substList.Count - 2] = (string)DataTable.GetVariableValueData(tmpName);
                         substList.RemoveAt(substList.Count - 1);
                         tmp.Add(tmpName); tmp.Add(ope); tmp.Add("1");
                         Substitution(tmp, tmpName, true);
@@ -1112,7 +1138,7 @@ public partial class ReadText : MonoBehaviour
 		#endregion
 	}
 
-    static void SetAllVarData(SetVariData obj, string varName,string moldName, string value)
+    static void SetAllVarData(SetVariData obj, string varName,object moldName, object value)
 	{
         obj.SetMolText(moldName);
         obj.SetValNameText(varName);

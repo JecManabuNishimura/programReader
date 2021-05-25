@@ -13,8 +13,8 @@ public static partial class DataTable
 		
 		public DATA_TYPE type;
 		public string name;
-		public string mold;
-		public string value;
+		public object mold;
+		public object value;
 		public int scoopNum;
 		public int[] array_size;
 		public object[] array_data;
@@ -102,7 +102,7 @@ public static partial class DataTable
 		variable.Add(val);
 	}
 
-	public static string GetVariableValueData(string name)
+	public static object GetVariableValueData(string name)
 	{
 		foreach(var data in variable)
 		{
@@ -283,6 +283,33 @@ public static partial class DataTable
 		}
 
 		return num;
+	}
+
+	// ŠÖ”–¼Eˆø”‚ª“¯‚¶‚à‚Ì‚ğ•Ô‚·
+	public static FUNC_DATA GetFuncOneData(string name,params object[] mold)
+	{
+		foreach(var obj in function)
+		{
+			// ŠÖ”–¼‚ª“¯‚¶
+			if(obj.name == name)
+			{
+				int counter = 0;
+				for(int i=0; i<mold.Length;i++)
+				{
+					// Œ^‚ª“¯‚¶
+					if (mold[i] == obj.getVariable[i].mold)
+					{
+						counter++;
+					}
+				}
+				if(obj.getVariable.Count == counter)
+				{
+					return obj;
+				}
+			}
+		}
+		// ‹ó‚ğ•Ô‚·
+		return new FUNC_DATA();
 	}
 }
 public static partial class DataTable

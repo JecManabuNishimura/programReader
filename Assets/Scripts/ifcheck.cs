@@ -164,12 +164,12 @@ public class ifcheck : MonoBehaviour
         else
         {
             // 定義済み変数かチェック
-            string val = DataTable.GetVariableValueData(substList[nowIndex]);
-            if (val != "")
+            object val = DataTable.GetVariableValueData(substList[nowIndex]);
+            if (val != null)
             {
                 nowIndex++;
 
-                num = val;
+                num = val.ToString();
             }
             else
             {

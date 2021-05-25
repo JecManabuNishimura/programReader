@@ -27,7 +27,7 @@ public class SetFuncData : MonoBehaviour
         FuncNameText.text = tex;
     }
 
-    public void SetValText(string mol,string valName,string value)
+    public void SetValText(object mol, string valName, object value)
 	{
         var obj = Instantiate(svd);
         obj.GetComponent<SetVariData>().SetMolText(mol);
