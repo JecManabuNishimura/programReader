@@ -21,16 +21,17 @@ public static partial class DataTable
 	}
 	public struct FUNC_DATA
 	{
+		
 		public string name;
 		public int begin;
-		public int end;
+		public int end; 
 		public string returnName;
 		public List<VARIABLE_DATA> getVariable;
 	}
 	
 	static List<FUNC_DATA> function = new List<FUNC_DATA>();
 	static List<VARIABLE_DATA> variable = new List<VARIABLE_DATA>(); 
-	public static void CrearData()
+	public static void ClearData()
 	{
 		variable.Clear();
 		function.Clear();
@@ -286,7 +287,7 @@ public static partial class DataTable
 	}
 
 	// ŠÖ”–¼Eˆø”‚ª“¯‚¶‚à‚Ì‚ğ•Ô‚·
-	public static FUNC_DATA GetFuncOneData(string name,params object[] mold)
+	public static bool GetFuncOneData(string name, out FUNC_DATA fd, params object[] mold)
 	{
 		foreach(var obj in function)
 		{
@@ -304,12 +305,14 @@ public static partial class DataTable
 				}
 				if(obj.getVariable.Count == counter)
 				{
-					return obj;
+					fd = obj;
+					return true;
 				}
 			}
 		}
+		fd = new FUNC_DATA();
 		// ‹ó‚ğ•Ô‚·
-		return new FUNC_DATA();
+		return false;
 	}
 }
 public static partial class DataTable

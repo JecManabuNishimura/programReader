@@ -10,7 +10,8 @@ public partial class ReadText : MonoBehaviour
 {
     static string mold = "";
     static string funcName = "";
-    static string leftValname = "";                     // 左辺変数
+    static string variableName = "";
+    static string leftValname = "";                 // 左辺変数
     static string switchLeftName = "";              // switch用の比較データ
     static string caseName = "";                    // case の値
     static string callFuncName = "";                // 呼び出し関数名
@@ -29,6 +30,7 @@ public partial class ReadText : MonoBehaviour
     static bool breakFlag = false;                  // break用フラグ
     static bool argumentpassFlag = false;           // 引数開始フラグ
     static public bool searchFuncFlag = false;      // 関数検索開始フラグ
+    static bool funcCheckFlag = false;              // 関数作成完了フラグ
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
@@ -90,6 +92,12 @@ public partial class ReadText : MonoBehaviour
 
 
     static public textGui.LOOP_NUMBER loopStep = textGui.LOOP_NUMBER.NONE;
+    
+    // プログタイプ宣言内容
+    static List<DataTable.FUNC_DATA> funcDataList = new List<DataTable.FUNC_DATA>();
+    // 関数定義一時内容
+    static DataTable.FUNC_DATA funcData = new DataTable.FUNC_DATA();                    
+    
 
     //----------デバッグ用--------------------------------------------------
     [SerializeField]
@@ -153,7 +161,7 @@ public partial class ReadText : MonoBehaviour
 
         tmpfunObj = funcObj;
         tmpfunTable = funcTable;
-        tmpArrayDataObj = ArrayDataObj;     
+        tmpArrayDataObj = ArrayDataObj;
         tmpArrayListObj = ArrayListObj;
     }
 	private void Update()
@@ -229,6 +237,115 @@ public partial class ReadText : MonoBehaviour
         ResetData();
 	}
 
+    // 関数定義作成
+    static public void CreateFuncData(string uiText, int line, int cursorIndex)
+	{
+        string newSyntax = uiText.TrimEnd(' ');
+        if (newSyntax == "\n" || newSyntax == "")
+        {
+            return;
+        }
+        if (SymbolCheck(newSyntax))
+		{
+            for (int i = 0; i < newSyntax.Length; i++)
+			{
+                if (!skipFlag)
+                {
+                    switch (newSyntax[i])
+                    {
+                        case '(':
+                            argumentFlag = true;
+                            break;
+                        case ')':
+                        case ',':
+                            if (mold != "" && variableName != "")
+                            {
+                                // データの確定
+                                DataTable.VARIABLE_DATA vari = new DataTable.VARIABLE_DATA();
+                                vari.mold = mold;
+                                vari.name = variableName;
+                                vari.type = DataTable.DATA_TYPE.INT;
+                                funcData.getVariable = new List<DataTable.VARIABLE_DATA>();
+                                funcData.getVariable.Add(vari);
+                            }
+                            break;
+                        case ';':
+                            // プロトタイプ宣言
+                            funcData = new DataTable.FUNC_DATA();
+
+                            break;
+                        case '{':
+                            funcData.begin = line;                  // 開始行目を記録
+                            funcCheckFlag = false;
+
+                            allNestLevel++;
+                            skipNestLevel = allNestLevel;
+                            skipFlag = true;
+                            break;
+                    }
+                }
+                // スキップ対応
+                else if (newSyntax[i] == '{')
+				{
+                    allNestLevel++;
+				}
+                else if(newSyntax[i] == '}')
+				{
+                    allNestLevel--;
+                    if(skipNestLevel > allNestLevel)
+					{
+                        skipFlag = false;
+                        skipNestLevel = -1;
+                        funcData.end = line;
+                        DataTable.AddFuncData(funcData);
+                    }
+				}
+			}
+        }
+        else
+		{
+            if (!skipFlag)
+            {
+                // 引数フラグが無い場合
+                if (!argumentFlag)
+                {
+                    // 型チェック
+                    if (CheckMold(newSyntax))
+                    {
+                        // 戻り値の型
+                        funcData.returnName = newSyntax;
+                    }
+                    else
+                    {
+                        // 関数名の設定
+                        if (funcData.returnName != "" && funcData.name == null)
+                        {
+                            funcData.name = newSyntax;
+                        }
+                    }
+                }
+                // 引数判定
+                else
+                {
+                    if (mold == "")
+                    {
+                        // 型チェック
+                        if (CheckMold(newSyntax))
+                        {
+                            // 一旦データ型を保存
+                            mold = newSyntax;
+                        }
+                    }
+                    else
+                    {
+                        // 変数名
+                        variableName = newSyntax;
+                    }
+                }
+            }
+        }
+    }
+
     static public void GetText(string uiText,int line,int cursorIndex)
 	{
         string newSyntax = uiText.TrimEnd(' ');
@@ -246,9 +363,8 @@ public partial class ReadText : MonoBehaviour
             // case の条件が合わなかったとき
             if(switchFlag)
                 if(nextCaseFlag)
-                {
                     return;
-                }
+
             // 中カッコが終わっている
             if (bracketsEndFlag)
             {
@@ -1236,6 +1352,19 @@ public partial class ReadText : MonoBehaviour
         {
             if (tex.IndexOf(ch) >= 0)
                 return true;
+        }
+        return false;
+    }
+
+    static bool CheckMold(string tex)
+	{
+        // 型チェック
+        foreach (var st in cName)
+        {
+            if (st == tex)
+            {
+                return true;
+            }
         }
         return false;
     }

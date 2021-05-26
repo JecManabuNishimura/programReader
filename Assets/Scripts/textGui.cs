@@ -279,11 +279,13 @@ public class textGui : MonoBehaviour
 		// デバッグ用リセット
 		if ((Event.current.keyCode == KeyCode.F1) && (Event.current.type == EventType.KeyUp))
 		{
+			FuncSerch(te, ev);
 			ResetData(te);
 		}
 		// デバッグ用　一括送信
 		if ((Event.current.keyCode == KeyCode.F2) && (Event.current.type == EventType.KeyUp))
 		{
+			FuncSerch(te, ev);
 			ReadTextData(te, ev);
 		}
 	}
@@ -299,7 +301,45 @@ public class textGui : MonoBehaviour
 
 		loopStepNumber = 0;
 	}
+	void FuncSerch(TextEditor te, Event ev)
+	{
+		// cursorIndex = 今のカーソル位置
+		// selectIndex = 移動後の位置（範囲選択）
+		ReadText.InitializeData();
 
+		// 変数一覧削除
+		DataTable.ClearData();
+
+		te.MoveTextEnd();
+		var endpos = te.selectIndex;
+		te.MoveTextStart();
+
+		int counter = 0, maxcount = 2000;
+
+		Init();
+
+		while (te.cursorIndex != endpos)
+		{
+			int line = 1;
+
+			te.SelectToStartOfNextWord();
+			ReadText.CreateFuncData(te.SelectedText, line, te.cursorIndex);
+
+			if (te.SelectedText.Contains("\n"))
+			{
+				line++;
+			}
+			te.MoveToStartOfNextWord();
+
+			// 永久ループ回避
+			if (maxcount <= counter)
+			{
+				Debug.LogError("無限ループしました");
+				break;
+			}
+			counter++;
+		}
+	}
 	void ReadTextProc(TextEditor te, Event ev)
 	{
 		int line = 1;
@@ -449,7 +489,7 @@ public class textGui : MonoBehaviour
 		ReadText.InitializeData();
 
 		// 変数一覧削除
-		DataTable.CrearData();
+		DataTable.ClearData();
 		
 		te.MoveTextEnd();
 		var endpos = te.selectIndex;
@@ -502,7 +542,7 @@ public class textGui : MonoBehaviour
 		// selectIndex = 移動後の位置（範囲選択）
 		ReadText.InitializeData();
 		// 変数一覧削除
-		DataTable.CrearData();
+		DataTable.ClearData();
 		te.MoveTextEnd();
 		var endpos = te.selectIndex;
 		te.MoveTextStart();
