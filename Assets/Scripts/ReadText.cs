@@ -14,7 +14,8 @@ public partial class ReadText : MonoBehaviour
     static string leftValname = "";                 // 左辺変数
     static string switchLeftName = "";              // switch用の比較データ
     static string caseName = "";                    // case の値
-    static string callFuncName = "";                // 呼び出し関数名
+    static Queue<string> callFuncName = 
+        new Queue<string>();                        // 呼び出し関数名
 
     static bool argumentFlag = false;               // 引数フラグ
     static bool argumentCanmaFlag = true;           // 引数カンマフラグ
@@ -31,6 +32,8 @@ public partial class ReadText : MonoBehaviour
     static bool argumentpassFlag = false;           // 引数開始フラグ
     static public bool searchFuncFlag = false;      // 関数検索開始フラグ
     static bool funcCheckFlag = false;              // 関数作成完了フラグ
+    static public bool sendFuncFlag = false;        // 呼び出し関数引き渡しフラグ
+    static public bool returnFuncFlag = false;      // 関数終了フラグ
 
     static bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
     static public bool nextLoopFlag;                // for文最後の処理フラグ
@@ -92,11 +95,14 @@ public partial class ReadText : MonoBehaviour
 
 
     static public textGui.LOOP_NUMBER loopStep = textGui.LOOP_NUMBER.NONE;
-    
+
     // プログタイプ宣言内容
-    static List<DataTable.FUNC_DATA> funcDataList = new List<DataTable.FUNC_DATA>();
+    static List<DataTableList.FUNC_DATA> prottypeFuncDataList = new List<DataTableList.FUNC_DATA>();
     // 関数定義一時内容
-    static DataTable.FUNC_DATA funcData = new DataTable.FUNC_DATA();                    
+    static DataTableList.FUNC_DATA funcData = new DataTableList.FUNC_DATA();
+
+    // 関数情報引き渡し情報
+    public static Queue<DataTableList.FUNC_DATA> sendFuncData = new Queue<DataTableList.FUNC_DATA>();
     
 
     //----------デバッグ用--------------------------------------------------
@@ -126,7 +132,7 @@ public partial class ReadText : MonoBehaviour
     static GameObject tmpArrayDataObj;
     static GameObject tmpArrayListObj;
     //------------------------------------------------------------
-    static DataTable.FUNC_DATA fncData;
+    static DataTableList.FUNC_DATA fncData;
 
 
     void Start()
@@ -207,8 +213,8 @@ public partial class ReadText : MonoBehaviour
 
 	static void ResetData()
 	{
-        fncData = new DataTable.FUNC_DATA();
-        fncData.getVariable = new List<DataTable.VARIABLE_DATA>();
+        fncData = new DataTableList.FUNC_DATA();
+        fncData.getVariable = new List<DataTableList.VARIABLE_DATA>();
         argumentFlag = false;
          mold = "";
         argumentCanmaFlag = true;
@@ -234,11 +240,20 @@ public partial class ReadText : MonoBehaviour
         skipFlag = false;
         arrayFlag = false;
         loopNestLevel.Clear();
+
         ResetData();
 	}
 
+    static public void ResetRink()
+	{
+        prottypeFuncDataList.Clear();
+        argumentFlag = false;
+        skipFlag = false;
+        funcData = new DataTableList.FUNC_DATA();
+    }
+
     // 関数定義作成
-    static public void CreateFuncData(string uiText, int line, int cursorIndex)
+    static public void CreateFuncData(string uiText,int line, int cursorIndex)
 	{
         string newSyntax = uiText.TrimEnd(' ');
         if (newSyntax == "\n" || newSyntax == "")
@@ -260,23 +275,52 @@ public partial class ReadText : MonoBehaviour
                         case ',':
                             if (mold != "" && variableName != "")
                             {
+                                if(funcData.returnName == "")
+								{
+                                    funcData.returnName = mold;
+                                    funcData.name = variableName;
+                                }
+                                else
+								{
+
+								}
+                                
                                 // データの確定
-                                DataTable.VARIABLE_DATA vari = new DataTable.VARIABLE_DATA();
+                                DataTableList.VARIABLE_DATA vari = new DataTableList.VARIABLE_DATA();
                                 vari.mold = mold;
                                 vari.name = variableName;
-                                vari.type = DataTable.DATA_TYPE.INT;
-                                funcData.getVariable = new List<DataTable.VARIABLE_DATA>();
+                                vari.type = DataTableList.DATA_TYPE.INT;
+                                if(funcData.getVariable == null)
+                                    funcData.getVariable = new List<DataTableList.VARIABLE_DATA>();
                                 funcData.getVariable.Add(vari);
+                                if (newSyntax[i] == ')')
+                                {
+                                    argumentFlag = false;
+                                }
                             }
-                            break;
-                        case ';':
-                            // プロトタイプ宣言
-                            funcData = new DataTable.FUNC_DATA();
 
                             break;
+                        case ';':
+                            if (funcData.returnName != "" && funcData.name != "")
+                            {
+                                if (argumentFlag)
+                                {
+                                    // プロトタイプ宣言
+                                    funcData.begin = funcData.end = cursorIndex;
+                                    if(funcData.getVariable == null)
+									{
+                                        funcData.getVariable = new List<DataTableList.VARIABLE_DATA>();
+									}
+                                    prottypeFuncDataList.Add(funcData);
+                                    funcData = new DataTableList.FUNC_DATA();
+                                    argumentFlag = false;
+                                }
+                            }
+                            break;
                         case '{':
-                            funcData.begin = line;                  // 開始行目を記録
-                            funcCheckFlag = false;
+                            argumentFlag = false;
+                            funcData.begin = cursorIndex;                  // 開始行目を記録
+                            funcData.line = line;
 
                             allNestLevel++;
                             skipNestLevel = allNestLevel;
@@ -296,9 +340,16 @@ public partial class ReadText : MonoBehaviour
 					{
                         skipFlag = false;
                         skipNestLevel = -1;
-                        funcData.end = line;
+                        funcData.end = cursorIndex;
+                        if (funcData.getVariable == null)
+                        {
+                            funcData.getVariable = new List<DataTableList.VARIABLE_DATA>();
+                        }
                         DataTable.AddFuncData(funcData);
+                        funcData = new DataTableList.FUNC_DATA();
                     }
+                    mold = "";
+                    variableName = "";
 				}
 			}
         }
@@ -352,6 +403,8 @@ public partial class ReadText : MonoBehaviour
         
         nextLoopFlag = false;
         loopEndFlag = false;
+        sendFuncFlag = false;
+        returnFuncFlag = false;
 
         if (newSyntax == "\n" || newSyntax == "")
 		{
@@ -391,42 +444,46 @@ public partial class ReadText : MonoBehaviour
                             {
                                 skipNestLevel = switchNestLevel.Pop();
                             }
-
                         }
-                        // 変数宣言
-                        if (!CheckVarialbleData(leftValname))
+                        else
 						{
-                            VariableDeclaration(leftValname, mold);
-                        }
-                        // 代入処理
-                        Substitution(substList,leftValname);
+                            // 変数宣言
+                            if (!CheckVarialbleData(leftValname))
+                            {
+                                VariableDeclaration(leftValname, mold);
+                            }
+                            // 代入処理
+                            Substitution(substList, leftValname);
 
-                        // for文チェック
-                        if (loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
-                        {
-                            if (ifcheck.CheckConditions(substList))
+                            // for文チェック
+                            if (loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.TERM)
+                            {
+                                if (ifcheck.CheckConditions(substList))
+                                {
+                                    nextLoopFlag = true;
+                                }
+                                else
+                                {
+                                    skipFlag = true;
+                                    skipNestLevel = allNestLevel;
+                                    loopNestLevel.Pop();
+                                    loopFlag = false;
+                                    //nextLoopFlag = true;
+                                    loopEndFlag = true;
+                                    if (loopNestLevel.Count != 0)
+                                    {
+                                        // textGui.cs内で判断するように保存
+                                        loopType = loopNestLevel.Peek().type;
+                                    }
+                                }
+                            }
+                            else if (loopFlag)
                             {
                                 nextLoopFlag = true;
                             }
-                            else
-                            {
-                                skipFlag = true;
-                                skipNestLevel = allNestLevel;
-                                loopNestLevel.Pop();
-                                loopFlag = false;
-                                //nextLoopFlag = true;
-                                loopEndFlag = true;
-                                if (loopNestLevel.Count != 0)
-                                {
-                                    // textGui.cs内で判断するように保存
-                                    loopType = loopNestLevel.Peek().type;
-                                }
-                            }
                         }
-                        else if (loopFlag)
-                        {
-                            nextLoopFlag = true;
-                        }
+                        
+                        /*
                         // 関数定義
                         else if (fncData.name != "" && fncData.name != null)
                         {
@@ -434,8 +491,7 @@ public partial class ReadText : MonoBehaviour
                             fncData.begin = line;
                             // 関数登録
                             DataTable.AddFuncData(fncData);
-                        }
-                        
+                        }*/
 
                         ResetData();
 
@@ -463,6 +519,7 @@ public partial class ReadText : MonoBehaviour
                         }
                         else
 						{
+                            /*
                             if (mold != "" && leftValname != "")
                             {
                                 if (newSyntax.IndexOf("(") >= 0)
@@ -479,19 +536,29 @@ public partial class ReadText : MonoBehaviour
                                 leftValname = "";
                                 mold = "";
                             }
-                            // 関数呼び出し
-                            else
+                            
+                            else*/
+                            if (mold != "" && leftValname != "")
 							{
-                                if(CheckFunctionData(substList[substList.Count - 1],out string name))
-								{
-                                    callFuncName = name;
-                                    argumentpassFlag = true;
-                                }
+                                // 一旦無視
 							}
-                            if (substitutionFlag || ifFlag || switchFlag)
+                            else if (substitutionFlag || ifFlag || switchFlag)
                             {
                                 substList.Add(newSyntax[i].ToString());
                             }
+                            else if (!int.TryParse( substList[substList.Count -1],out int result))
+							{
+                                if (CheckFunctionData(substList[substList.Count - 1], line, out DataTableList.FUNC_DATA func))
+                                {
+                                    callFuncName.Enqueue(func.name);
+                                    argumentpassFlag = true;
+                                }
+                                else
+								{
+                                    Debug.Log("関数はない:" + substList[substList.Count - 1]);
+								}
+                            }
+                            
                         }
 
                         bracketsCount++;
@@ -501,6 +568,13 @@ public partial class ReadText : MonoBehaviour
                         if(argumentpassFlag)
 						{
                             SetArgumentPass();
+                            // 関数呼び出し
+                            if(DataTable.GetFuncOneData(callFuncName.Peek(),out DataTableList.FUNC_DATA fd,argumentPass))
+							{
+                                // 関数が見つかった場合
+                                sendFuncFlag = true;
+                                sendFuncData.Enqueue(fd);
+                            }
                         }
                         argumentpassFlag = false;
                         bracketsCount--;
@@ -563,15 +637,6 @@ public partial class ReadText : MonoBehaviour
                             }
                             break;
                         }
-                        // 関数呼び出し先を探す
-                        else if(searchFuncFlag)
-						{
-                            // 関数呼び出し名が同じなら
-                            if(callFuncName == leftValname)
-							{
-                                
-							}
-						}
                         //ResetData();   // 一旦コメントアウト
                         break;
                     case '{':
@@ -617,6 +682,7 @@ public partial class ReadText : MonoBehaviour
                         //skipNestLevel = -1;
                         bracketsEndFlag = true;
 
+
                         DataTable.DeleteVariableScoopData(allNestLevel);
 
                         // ループネストが終了した場合
@@ -638,6 +704,13 @@ public partial class ReadText : MonoBehaviour
                                 }
                             }
                         }
+                        // 呼び出されている場合はその場に戻る
+                        else if (sendFuncData.Count != 0)
+                        {
+                            returnFuncFlag = true;
+
+                        }
+
                         // 関数から抜けた場合
                         else if(funcNestLevel == allNestLevel)
 						{
@@ -761,7 +834,7 @@ public partial class ReadText : MonoBehaviour
                                 // 代入の場合
                                 if(substitutionFlag)
 								{
-                                    DataTable.VARIABLE_DATA vd;
+                                    DataTableList.VARIABLE_DATA vd;
                                     if (CheckVarialbleData(substList[substList.Count - 1], arrayCountList, out vd))
                                     {
                                         substList.RemoveAt(substList.Count - 1);
@@ -886,6 +959,7 @@ public partial class ReadText : MonoBehaviour
 			}
 
 			// 関数引数(宣言時)
+            /*
 			else if (argumentFlag)
             {
                 #region 関数の引数処理
@@ -910,7 +984,7 @@ public partial class ReadText : MonoBehaviour
                     // 変数名
                     else
                     {
-                        DataTable.VARIABLE_DATA vd = new DataTable.VARIABLE_DATA();
+                        DataTableList.VARIABLE_DATA vd = new DataTableList.VARIABLE_DATA();
                         vd.name = newSyntax;
                         vd.mold = mold;
                         vd.value = "0";
@@ -924,6 +998,7 @@ public partial class ReadText : MonoBehaviour
                 }
                 #endregion
             }
+            */
             else 
 			{
                 substList.Add(newSyntax);
@@ -985,7 +1060,8 @@ public partial class ReadText : MonoBehaviour
                         substList.RemoveAt(substList.Count - 2);
                     }
 				}
-                else if (mold == "" && fncData.returnName == null)
+                //else if (mold == "" && fncData.returnName == null)
+                else if(mold == "")
                 {
                     // 型のチェック
                     foreach (var st in cName)
@@ -1023,10 +1099,10 @@ public partial class ReadText : MonoBehaviour
 	{
         ARGUMENT_PASS_DATA apd = new ARGUMENT_PASS_DATA();
         // 変数があるかチェック
-        if (CheckVarialbleData(substList[substList.Count - 1], out DataTable.VARIABLE_DATA vd))
+        if (CheckVarialbleData(substList[substList.Count - 1], out DataTableList.VARIABLE_DATA vd))
         {
             // 配列の場合
-            if (vd.type == DataTable.DATA_TYPE.ARRAY)
+            if (vd.type == DataTableList.DATA_TYPE.ARRAY)
             {
                 if (CheckVarialbleData(vd.name, arrayCountList, out vd))
                 {
@@ -1120,7 +1196,7 @@ public partial class ReadText : MonoBehaviour
 	{
         if(name != "" && setMold != "")
 		{
-            DataTable.VARIABLE_DATA ValData = new DataTable.VARIABLE_DATA() ;
+            DataTableList.VARIABLE_DATA ValData = new DataTableList.VARIABLE_DATA() ;
             ValData.name = name;
             ValData.mold = setMold;
             ValData.value = "0";
@@ -1195,7 +1271,7 @@ public partial class ReadText : MonoBehaviour
             {
                 foreach(var data in DataTable.GetVarialbleDataList())
 				{
-                    if (data.type == DataTable.DATA_TYPE.ARRAY)
+                    if (data.type == DataTableList.DATA_TYPE.ARRAY)
 					{
                         var tmpListObj = Instantiate(tmpArrayListObj);
                         tmpListObj.transform.parent = tmpvTable.transform;
@@ -1261,21 +1337,32 @@ public partial class ReadText : MonoBehaviour
         obj.SetValueText(value);
     }
 
-    static bool CheckFunctionData(string val,out string name)
+    static bool CheckFunctionData(string funcName, int line, out DataTableList.FUNC_DATA fData)
 	{
-        foreach(var data in DataTable.GetFunctionDataLIst())
+        foreach(var data in prottypeFuncDataList)
 		{
-            if(data.name == val)
+            if(data.name == funcName)
 			{
-                name = val;
-                return true;
+                // 呼び出しより上にプロトタイプ宣言がある場合
+                if(data.line <= line)
+				{
+                    // 関数定義があるかチェック
+                    foreach(var fucData in DataTable.GetFunctionDataLIst())
+					{
+                        if(data == fucData)
+						{
+                            fData = fucData;
+                            return true;
+						}
+					}
+				}
 			}
 		}
-        name = "";
+        fData = new DataTableList.FUNC_DATA();
         return false;
 	}
 
-    static bool CheckVarialbleData(string val,out DataTable.VARIABLE_DATA vd)
+    static bool CheckVarialbleData(string val,out DataTableList.VARIABLE_DATA vd)
 	{
         foreach(var data in  DataTable.GetVarialbleDataList())
 		{
@@ -1285,7 +1372,7 @@ public partial class ReadText : MonoBehaviour
                 return true;
 			}
 		}
-        vd = new DataTable.VARIABLE_DATA();
+        vd = new DataTableList.VARIABLE_DATA();
         return false;
 	}
     static bool CheckVarialbleData(string val)
@@ -1299,7 +1386,7 @@ public partial class ReadText : MonoBehaviour
         }
         return false;
     }
-    static bool CheckVarialbleData(string val,List<int> _arrayList,out DataTable.VARIABLE_DATA vd)
+    static bool CheckVarialbleData(string val,List<int> _arrayList,out DataTableList.VARIABLE_DATA vd)
     {
         foreach (var data in DataTable.GetVarialbleDataList())
         {
@@ -1317,11 +1404,11 @@ public partial class ReadText : MonoBehaviour
 				}
             }
         }
-        vd = new DataTable.VARIABLE_DATA();
+        vd = new DataTableList.VARIABLE_DATA();
         return false;
     }
 
-    static string GetArrayData(DataTable.VARIABLE_DATA data,List<int>_arrayList)
+    static string GetArrayData(DataTableList.VARIABLE_DATA data,List<int>_arrayList)
 	{
         return (string)DataTable.GetOneArrayNumberData(data, _arrayList);
 	}

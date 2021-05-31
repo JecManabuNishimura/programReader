@@ -1,16 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-
-public static partial class DataTable
+public class DataTableList
 {
-	// INT = 単体
-	// PTR = アドレス
-	// ARRAY = 配列
 	public enum DATA_TYPE { INT, PTR, ARRAY };
 	public struct VARIABLE_DATA
 	{
-		
+
 		public DATA_TYPE type;
 		public string name;
 		public object mold;
@@ -21,16 +17,74 @@ public static partial class DataTable
 	}
 	public struct FUNC_DATA
 	{
-		
+
 		public string name;
+		public int line;
 		public int begin;
-		public int end; 
+		public int end;
 		public string returnName;
 		public List<VARIABLE_DATA> getVariable;
+
+		public static bool operator ==(FUNC_DATA pro, FUNC_DATA fun)
+		{
+			if ((pro.returnName == fun.returnName) &&
+				(pro.name == fun.name) &&
+				(pro.getVariable.Count == fun.getVariable.Count))
+			{
+				int matchCount = 0;
+				for (int i = 0; i < pro.getVariable.Count; i++)
+				{
+					if (pro.getVariable[i].mold == fun.getVariable[i].mold)
+					{
+						matchCount++;
+					}
+				}
+				if (matchCount == pro.getVariable.Count)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+		public static bool operator !=(FUNC_DATA pro, FUNC_DATA fun)
+		{
+			if ((pro.returnName == fun.returnName) &&
+				(pro.name == fun.name) &&
+				(pro.getVariable.Count == fun.getVariable.Count))
+			{
+				int matchCount = 0;
+				for (int i = 0; i < pro.getVariable.Count; i++)
+				{
+					if (pro.getVariable[i].mold == fun.getVariable[i].mold)
+					{
+						matchCount++;
+					}
+				}
+				if (matchCount == pro.getVariable.Count)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
 	}
+
+
+
+
+}
+
+
+public static partial class DataTable
+{
+	// INT = 単体
+	// PTR = アドレス
+	// ARRAY = 配列
+
+
 	
-	static List<FUNC_DATA> function = new List<FUNC_DATA>();
-	static List<VARIABLE_DATA> variable = new List<VARIABLE_DATA>(); 
+	static List<DataTableList.FUNC_DATA> function = new List<DataTableList.FUNC_DATA>();
+	static List<DataTableList.VARIABLE_DATA> variable = new List<DataTableList.VARIABLE_DATA>(); 
 	public static void ClearData()
 	{
 		variable.Clear();
@@ -40,7 +94,7 @@ public static partial class DataTable
 	public static void DeleteVariableScoopData(int scoopIndex)
 	{
 		//データを削除する（解放された)
-		IEnumerable<VARIABLE_DATA> data = variable.Where(n => n.scoopNum > scoopIndex);
+		IEnumerable<DataTableList.VARIABLE_DATA> data = variable.Where(n => n.scoopNum > scoopIndex);
 		foreach(var d in data)
 		{
 			Debug.Log(d.name + "が、解放されました");
@@ -70,14 +124,14 @@ public static partial class DataTable
 		variable.RemoveAt(index);
 	}
 
-	public static void AddFuncData(FUNC_DATA fnc)
+	public static void AddFuncData(DataTableList.FUNC_DATA fnc)
 	{
 		function.Add(fnc);
 	}
 
-	public static void AddVariableData(VARIABLE_DATA val, List<int> arraySize)
+	public static void AddVariableData(DataTableList.VARIABLE_DATA val, List<int> arraySize)
 	{
-		val.type = DATA_TYPE.ARRAY;
+		val.type = DataTableList.DATA_TYPE.ARRAY;
 		int arraynum = 1;
 		int count = 0;
 		val.array_size = new int[arraySize.Count];
@@ -96,10 +150,10 @@ public static partial class DataTable
 		}
 		variable.Add(val);
 	}
-	public static void AddVariableData(VARIABLE_DATA val)
+	public static void AddVariableData(DataTableList.VARIABLE_DATA val)
 	{
 		
-		val.type = DATA_TYPE.INT;
+		val.type = DataTableList.DATA_TYPE.INT;
 		variable.Add(val);
 	}
 
@@ -115,12 +169,12 @@ public static partial class DataTable
 		return "";
 	}
 
-	public static List<VARIABLE_DATA> GetVarialbleDataList()
+	public static List<DataTableList.VARIABLE_DATA> GetVarialbleDataList()
 	{
 		return variable;
 	}
 
-	public static List<FUNC_DATA> GetFunctionDataLIst()
+	public static List<DataTableList.FUNC_DATA> GetFunctionDataLIst()
 	{
 		return function;
 	}
@@ -132,9 +186,9 @@ public static partial class DataTable
 		{
 			if (variable[i].name == valName)
 			{
-				if(variable[i].type == DATA_TYPE.ARRAY)
+				if(variable[i].type == DataTableList.DATA_TYPE.ARRAY)
 				{
-					VARIABLE_DATA vd = variable[i];
+					DataTableList.VARIABLE_DATA vd = variable[i];
 					// 要素番号が存在するか確認
 					if(!CheckArrayNumber(vd,_arrayCount))
 					{
@@ -146,7 +200,7 @@ public static partial class DataTable
 				}
 				else
 				{
-					VARIABLE_DATA vd = variable[i];
+					DataTableList.VARIABLE_DATA vd = variable[i];
 					vd.value = value;
 					variable[i] = vd;
 					return true;
@@ -156,7 +210,7 @@ public static partial class DataTable
 		return false;
 	}
 
-	public static bool CheckArrayNumber(VARIABLE_DATA vd, List<int> _arrayCount)
+	public static bool CheckArrayNumber(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
 	{
 		for (int ci = 0; ci < _arrayCount.Count; ci++)
 		{
@@ -171,18 +225,18 @@ public static partial class DataTable
 		return true;
 	}
 
-	public static object GetOneArrayNumber(VARIABLE_DATA vd, List<int> _arrayCount)
+	public static object GetOneArrayNumber(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
 	{
 		int number = _arrayCount.Count;
 		return ChengeOneArray(vd, _arrayCount, ref number);
 	}
 
-	public static object GetOneArrayNumberData(VARIABLE_DATA vd, List<int> _arrayCount)
+	public static object GetOneArrayNumberData(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
 	{
 		return vd.array_data[(int)GetOneArrayNumber(vd,_arrayCount)];
 	}
 
-	public static string GetArrayAddress(VARIABLE_DATA vd, int eleNum)
+	public static string GetArrayAddress(DataTableList.VARIABLE_DATA vd, int eleNum)
 	{
 		int mod = eleNum;
 		int number = 0;
@@ -191,7 +245,7 @@ public static partial class DataTable
 	}
 	
 	
-	public static string ReturnArrayAddress(VARIABLE_DATA vd, ref int mod, ref int number)
+	public static string ReturnArrayAddress(DataTableList.VARIABLE_DATA vd, ref int mod, ref int number)
 	{
 		if(number == vd.array_size.Length - 1)
 		{
@@ -211,7 +265,7 @@ public static partial class DataTable
 
 	}
 
-	public static int ChengeOneArray(VARIABLE_DATA vd, List<int> _arrayCount, ref int number)
+	public static int ChengeOneArray(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount, ref int number)
 	{
 		int calc = 1;
 		
@@ -249,7 +303,7 @@ public static partial class DataTable
 				{
 					if(function[i].getVariable[y].name == valName)
 					{
-						VARIABLE_DATA vd = function[i].getVariable[y];
+						DataTableList.VARIABLE_DATA vd = function[i].getVariable[y];
 						vd.value = value;
 						function[i].getVariable[y] = vd;
 						return true;
@@ -287,7 +341,7 @@ public static partial class DataTable
 	}
 
 	// 関数名・引数が同じものを返す
-	public static bool GetFuncOneData(string name, out FUNC_DATA fd, params object[] mold)
+	public static bool GetFuncOneData(string name, out DataTableList.FUNC_DATA fd, params object[] mold)
 	{
 		foreach(var obj in function)
 		{
@@ -297,10 +351,13 @@ public static partial class DataTable
 				int counter = 0;
 				for(int i=0; i<mold.Length;i++)
 				{
-					// 型が同じ
-					if (mold[i] == obj.getVariable[i].mold)
+					if (obj.getVariable.Count != 0)
 					{
-						counter++;
+						// 型が同じ
+						if (mold[i] == obj.getVariable[i].mold)
+						{
+							counter++;
+						}
 					}
 				}
 				if(obj.getVariable.Count == counter)
@@ -310,10 +367,12 @@ public static partial class DataTable
 				}
 			}
 		}
-		fd = new FUNC_DATA();
+		fd = new DataTableList.FUNC_DATA();
 		// 空を返す
 		return false;
 	}
+
+
 }
 public static partial class DataTable
 {

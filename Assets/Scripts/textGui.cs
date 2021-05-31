@@ -144,6 +144,7 @@ public class textGui : MonoBehaviour
 {
 
 	string stext;
+	int startPos = 0;
 
 	[SerializeField]
 	private Text intext;
@@ -168,12 +169,15 @@ public class textGui : MonoBehaviour
 	TextEditor te;
 	bool tabFlag = false;
 	int tabIndex = 0;
+	int line = 1;
 
 	Stack<int> funcIndex = new Stack<int>();
 
 	Stack<LOOP_INDEX> loopIndex = new Stack<LOOP_INDEX>();
 	int loopCount = 0;
 	static  public LOOP_NUMBER loopStepNumber = LOOP_NUMBER.NONE;
+
+	static Queue<int> callBackFuncPos = new Queue<int>();
 
 	public enum LOOP_NUMBER
 	{
@@ -280,19 +284,38 @@ public class textGui : MonoBehaviour
 		if ((Event.current.keyCode == KeyCode.F1) && (Event.current.type == EventType.KeyUp))
 		{
 			FuncSerch(te, ev);
-			ResetData(te);
+			if(StartToMain())
+			{
+				ResetData(te);
+				te.cursorIndex = te.selectIndex = startPos;
+				
+			}
+			else
+			{
+				Debug.LogError("main関数がありません。");
+			}
+			
 		}
 		// デバッグ用　一括送信
 		if ((Event.current.keyCode == KeyCode.F2) && (Event.current.type == EventType.KeyUp))
 		{
 			FuncSerch(te, ev);
-			ReadTextData(te, ev);
+			if (StartToMain())
+			{
+				
+				ReadTextData(te, ev);
+			}
+			else
+			{
+				Debug.LogError("main関数がありません。");
+			}
+			
 		}
 	}
 
 	void Init()
 	{
-
+		line = 1;
 		loopCount = 0;
 
 		li.endIndex = li.nextIndex = li.startIndex = li.termIndex = 0;
@@ -306,6 +329,7 @@ public class textGui : MonoBehaviour
 		// cursorIndex = 今のカーソル位置
 		// selectIndex = 移動後の位置（範囲選択）
 		ReadText.InitializeData();
+		ReadText.ResetRink();
 
 		// 変数一覧削除
 		DataTable.ClearData();
@@ -320,10 +344,8 @@ public class textGui : MonoBehaviour
 
 		while (te.cursorIndex != endpos)
 		{
-			int line = 1;
-
 			te.SelectToStartOfNextWord();
-			ReadText.CreateFuncData(te.SelectedText, line, te.cursorIndex);
+			ReadText.CreateFuncData(te.SelectedText,line,te.cursorIndex);
 
 			if (te.SelectedText.Contains("\n"))
 			{
@@ -342,7 +364,7 @@ public class textGui : MonoBehaviour
 	}
 	void ReadTextProc(TextEditor te, Event ev)
 	{
-		int line = 1;
+
 		string nowText = "";
 
 		te.SelectToStartOfNextWord();
@@ -361,6 +383,17 @@ public class textGui : MonoBehaviour
 		{
 			te.selectIndex = te.cursorIndex = loopIndex.Peek().endIndex;
 			loopIndex.Pop();
+		}
+		else if(ReadText.sendFuncFlag)
+		{
+			// 呼び出し先に移動する
+			callBackFuncPos.Enqueue(te.selectIndex);
+			te.selectIndex = te.cursorIndex = ReadText.sendFuncData.Peek().begin;
+		}
+		else if(ReadText.returnFuncFlag)
+		{
+			// 元の場所に戻る
+			te.selectIndex = te.cursorIndex = callBackFuncPos.Dequeue();
 		}
 		else if (ReadText.newLoopFlag)
 		{
@@ -488,8 +521,7 @@ public class textGui : MonoBehaviour
 		// selectIndex = 移動後の位置（範囲選択）
 		ReadText.InitializeData();
 
-		// 変数一覧削除
-		DataTable.ClearData();
+
 		
 		te.MoveTextEnd();
 		var endpos = te.selectIndex;
@@ -498,7 +530,7 @@ public class textGui : MonoBehaviour
 		int counter = 0, maxcount = 2000;
 
 		Init();
-
+		te.cursorIndex = te.selectIndex = startPos;
 		while (te.cursorIndex != endpos)
 		{
 			ReadTextProc(te, ev);
@@ -542,7 +574,7 @@ public class textGui : MonoBehaviour
 		// selectIndex = 移動後の位置（範囲選択）
 		ReadText.InitializeData();
 		// 変数一覧削除
-		DataTable.ClearData();
+		//DataTable.ClearData();
 		te.MoveTextEnd();
 		var endpos = te.selectIndex;
 		te.MoveTextStart();
@@ -553,5 +585,19 @@ public class textGui : MonoBehaviour
 	{
 		ReadTextProc(te, ev);
 		ReadText.CreateData();
+	}
+
+	// main関数から始める
+	bool StartToMain()
+	{
+		foreach(var func in DataTable.GetFunctionDataLIst())
+		{
+			if(func.name == "main")
+			{
+				startPos = func.begin;
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -34,7 +34,7 @@ public class SetVariData : MonoBehaviour
 
     public void SetValueText(object tex)
 	{
-        valueText.text = tex.ToString();
+        //valueText.text = tex.ToString();
 	}
 
 }
