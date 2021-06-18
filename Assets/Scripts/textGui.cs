@@ -145,6 +145,7 @@ public class textGui : MonoBehaviour
 
 	string stext;
 	int startPos = 0;
+	int endPos = 0;
 
 	[SerializeField]
 	private Text intext;
@@ -276,7 +277,7 @@ public class textGui : MonoBehaviour
 			code = code.Insert(te.cursorIndex, "   ");
 			tabIndex = te.cursorIndex + 3;
 		}
-		if (((Event.current.keyCode == KeyCode.F10) && (Event.current.type == EventType.KeyUp)) || ReadText.skipFlag)
+		if (((Event.current.keyCode == KeyCode.F10) && (Event.current.type == EventType.KeyUp)) || ReadText.data.skipFlag)
 		{
 			ReadTextDataTest(te, ev);
 		}
@@ -379,23 +380,31 @@ public class textGui : MonoBehaviour
 		}
 		te.MoveToStartOfNextWord();
 
-		if (ReadText.loopEndFlag)
+		if (ReadText.data.loopEndFlag)
 		{
 			te.selectIndex = te.cursorIndex = loopIndex.Peek().endIndex;
 			loopIndex.Pop();
 		}
-		else if(ReadText.sendFuncFlag)
+		else if(ReadText.data.sendFuncFlag)
 		{
 			// åƒÇ—èoÇµêÊÇ…à⁄ìÆÇ∑ÇÈ
-			callBackFuncPos.Enqueue(te.selectIndex);
+			if(ReadText.data.callFuncEndFlag)
+			{
+				callBackFuncPos.Enqueue(te.selectIndex - 1);
+			}
+			else
+			{
+				callBackFuncPos.Enqueue(te.selectIndex);
+			}
+			
 			te.selectIndex = te.cursorIndex = ReadText.sendFuncData.Peek().begin;
 		}
-		else if(ReadText.returnFuncFlag)
+		else if(ReadText.data.returnFuncFlag)
 		{
 			// å≥ÇÃèÍèäÇ…ñﬂÇÈ
 			te.selectIndex = te.cursorIndex = callBackFuncPos.Dequeue();
 		}
-		else if (ReadText.newLoopFlag)
+		else if (ReadText.data.newLoopFlag)
 		{
 			li.endIndex = 0;
 			li.nextIndex = 0;
@@ -404,7 +413,7 @@ public class textGui : MonoBehaviour
 			li.StepNumber = LOOP_NUMBER.NONE;
 			loopIndex.Push(li);
 		}
-		else if(ReadText.searchFuncFlag)
+		else if(ReadText.data.searchFuncFlag)
 		{
 			if(funcIndex.Peek() == te.cursorIndex)
 			{
@@ -412,12 +421,12 @@ public class textGui : MonoBehaviour
 			}
 		}
 		// ÉãÅ[ÉvëŒâû
-		if (ReadText.nextLoopFlag)
+		if (ReadText.data.nextLoopFlag)
 		{
-			switch(ReadText.loopType)
+			switch(ReadText.data.loopType)
 			{
 				// forï∂ÇÃèÍçá
-				case ReadText.LOOP_TYPE_NAME.FOR:
+				case ReadData.LOOP_TYPE_NAME.FOR:
 					#region forï∂
 					switch (loopIndex.Peek().StepNumber)
 					{
@@ -467,7 +476,7 @@ public class textGui : MonoBehaviour
 					loopStepNumber = loopIndex.Peek().StepNumber;
 					#endregion
 					break;
-				case ReadText.LOOP_TYPE_NAME.WHILE:
+				case ReadData.LOOP_TYPE_NAME.WHILE:
 					switch (loopIndex.Peek().StepNumber)
 					{
 						case LOOP_NUMBER.NONE:
@@ -511,7 +520,7 @@ public class textGui : MonoBehaviour
 					}
 					break;
 			}
-			ReadText.loopStep = loopIndex.Peek().StepNumber;
+			ReadText.data.loopStep = loopIndex.Peek().StepNumber;
 		}
 	}
 

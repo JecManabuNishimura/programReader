@@ -17,6 +17,9 @@ public class SetVariData : MonoBehaviour
     [SerializeField]
     Text arrayNum;
 
+    [SerializeField]
+    Image cursorImg;
+
 
     public void SetArrayNumText(string tex)
     {
@@ -34,7 +37,12 @@ public class SetVariData : MonoBehaviour
 
     public void SetValueText(object tex)
 	{
-        //valueText.text = tex.ToString();
+        valueText.text = tex.ToString();
+	}
+
+    public void SetVisibleImg(bool flag = true)
+	{
+        cursorImg.enabled = flag;
 	}
 
 }

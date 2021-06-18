@@ -7,12 +7,13 @@ public class arithmeticCheck
     static int nowIndex = 0;
 
     static List<string> substList;
-    static public string Check(List<string> list)
+    // ç°ÇÕintÇÃÇ›ÇÃå^
+    static public string Check(List<string> list,out string mold)
     {
         substList = list;
         nowIndex = 0;
-        //return eval1().ToString();
-        return "";
+        mold = "int";
+        return INT_Arithmetic.Check(list).ToString();
     }
 
 }
@@ -145,7 +146,10 @@ public class INT_Arithmetic
                     object sv = DataTable.GetVariableValueData(substList[nowIndex]);
                     if (sv != null)
                     {
-                        value = (int)sv;
+                        if(int.TryParse((string)sv,out int res))
+						{
+                            value = res;
+						}
                         break;
                     }
                     else

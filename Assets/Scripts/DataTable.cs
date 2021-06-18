@@ -14,6 +14,7 @@ public class DataTableList
 		public int scoopNum;
 		public int[] array_size;
 		public object[] array_data;
+		public bool selectItemFlag;
 	}
 	public struct FUNC_DATA
 	{
@@ -312,6 +313,22 @@ public static partial class DataTable
 			}
 		}
 		return false;
+	}
+
+	public static void SetVariableItemFlag(string name)
+	{
+		for(int i=0; i<variable.Count;i++)
+		{
+			if(variable[i].name == name)
+			{
+				DataTableList.VARIABLE_DATA data = variable[i];
+				data.selectItemFlag = true;
+				variable[i] = data;
+				return;
+			}
+		}
+
+		Debug.Log("Žw’è‚µ‚½•Ï”–¼‚Í‘¶Ý‚µ‚È‚¢");
 	}
 
 	public static int GetVariableNum()
