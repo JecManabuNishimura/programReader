@@ -385,7 +385,7 @@ public class textGui : MonoBehaviour
 			te.selectIndex = te.cursorIndex = loopIndex.Peek().endIndex;
 			loopIndex.Pop();
 		}
-		else if(ReadText.data.sendFuncFlag)
+		else if(ReadText.sendFuncFlag)
 		{
 			// ŒÄ‚Ño‚µæ‚ÉˆÚ“®‚·‚é
 			if(ReadText.data.callFuncEndFlag)
@@ -399,7 +399,7 @@ public class textGui : MonoBehaviour
 			
 			te.selectIndex = te.cursorIndex = ReadText.sendFuncData.Peek().begin;
 		}
-		else if(ReadText.data.returnFuncFlag)
+		else if(ReadText.returnFuncFlag)
 		{
 			// Œ³‚ÌêŠ‚É–ß‚é
 			te.selectIndex = te.cursorIndex = callBackFuncPos.Dequeue();

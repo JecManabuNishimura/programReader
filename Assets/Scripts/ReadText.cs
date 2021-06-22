@@ -54,7 +54,7 @@ public class ReadData
     public string leftValname = "";                 // 左辺変数
     public string switchLeftName = "";              // switch用の比較データ
     public string caseName = "";                    // case の値
-    public object returnValue;                      // 戻り値
+    
     public bool argumentFlag = false;               // 引数フラグ
     public bool argumentCanmaFlag = true;           // 引数カンマフラグ
     public bool substitutionFlag = false;           // 代入フラグ
@@ -70,8 +70,8 @@ public class ReadData
     public bool argumentpassFlag = false;           // 引数開始フラグ
     public bool searchFuncFlag = false;      // 関数検索開始フラグ
     public bool funcCheckFlag = false;              // 関数作成完了フラグ
-    public bool sendFuncFlag = false;        // 呼び出し関数引き渡しフラグ
-    public bool returnFuncFlag = false;      // 関数終了フラグ
+    
+    
     public bool returnFlag = false;                 // 戻り値フラグ
     public bool callFuncEndFlag = false;     // ();回避フラグ
     public bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
@@ -99,7 +99,6 @@ public class ReadData
     public Stack<int> nestStack = new Stack<int>();
 
     public List<string> substList = new List<string>();
-    public List<string> tmpsubstList = new List<string>();
 }
 
 
@@ -119,7 +118,10 @@ public partial class ReadText : MonoBehaviour
     public static Queue<ReadData> datas = new Queue<ReadData>();
 
     public static ReadData data = new ReadData();
-    
+
+    public static bool sendFuncFlag = false;                // 呼び出し関数引き渡しフラグ
+    public static bool returnFuncFlag = false;              // 関数終了フラグ
+    public static object returnValue;                       // 戻り値
 
     //----------デバッグ用--------------------------------------------------
     [SerializeField]
@@ -416,9 +418,15 @@ public partial class ReadText : MonoBehaviour
 
         data.nextLoopFlag = false;
         data.loopEndFlag = false;
-        data.sendFuncFlag = false;
+        
         data.callFuncEndFlag = false;
-        data.returnFuncFlag = false;
+        returnFuncFlag = false;
+
+        if(returnValue != null)
+		{
+            data.substList.Add((string)returnValue);
+		}
+        sendFuncFlag = false;
 
         if (newSyntax == "\n" || newSyntax == "")
 		{
@@ -471,8 +479,10 @@ public partial class ReadText : MonoBehaviour
                                         // 戻り値の型が合っているかチェック
                                         if (mold == sendFuncData.Peek().returnName)
                                         {
-                                            data.returnValue = val;
-
+                                            returnValue = val;
+                                            returnFuncFlag = true;
+                                            data = datas.Dequeue();
+                                            
                                         }
                                     }
                                     else
@@ -481,8 +491,9 @@ public partial class ReadText : MonoBehaviour
 									}
                                 }
                                 data.returnFlag = false;
+                                return;
                             }
-                            else if(data.sendFuncFlag)
+                            else if(sendFuncFlag)
 							{
                                 // ();のパターンの時は一旦スキップ-
 							}
@@ -586,6 +597,7 @@ public partial class ReadText : MonoBehaviour
                                 {
                                     data.callFuncName.Enqueue(func.name);
                                     data.argumentpassFlag = true;
+                                    
                                 }
                                 else
                                 {
@@ -646,16 +658,16 @@ public partial class ReadText : MonoBehaviour
                         else if (data.argumentpassFlag)
                         {
                             SetArgumentPass();
+
                             // 関数呼び出し
                             if (DataTable.GetFuncOneData(data.callFuncName.Peek(), out DataTableList.FUNC_DATA fd, data.argumentPass))
                             {
                                 // 関数が見つかった場合
-                                data.sendFuncFlag = true;
+                                sendFuncFlag = true;
+                                data.substList.RemoveAt(data.substList.Count - 1);
                                 sendFuncData.Enqueue(fd);
-                                data.tmpsubstList = data.substList;
-                                data.substList.Clear();
-                                data.mold = "";
-                                data.leftValname = "";
+                                datas.Enqueue(data);
+                                data = new ReadData();
                             }
                             data.argumentpassFlag = false;
                             // ();のパターン回避
@@ -754,7 +766,7 @@ public partial class ReadText : MonoBehaviour
                         // 呼び出されている場合はその場に戻る
                         else if (sendFuncData.Count != 0)
                         {
-                            data.returnFuncFlag = true;
+                            returnFuncFlag = true;
                         }
 
                         // 関数から抜けた場合
