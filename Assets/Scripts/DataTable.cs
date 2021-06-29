@@ -16,6 +16,11 @@ public class DataTableList
 		public object[] array_data;
 		public bool selectItemFlag;
 	}
+	public struct STRUCT_DATA
+	{
+		public string name;
+		public List<VARIABLE_DATA> variable_data;
+	}
 	public struct FUNC_DATA
 	{
 
@@ -85,11 +90,13 @@ public static partial class DataTable
 
 	
 	static List<DataTableList.FUNC_DATA> function = new List<DataTableList.FUNC_DATA>();
-	static List<DataTableList.VARIABLE_DATA> variable = new List<DataTableList.VARIABLE_DATA>(); 
+	static List<DataTableList.VARIABLE_DATA> variable = new List<DataTableList.VARIABLE_DATA>();
+	static List<DataTableList.STRUCT_DATA> structDatas = new List<DataTableList.STRUCT_DATA>();
 	public static void ClearData()
 	{
 		variable.Clear();
 		function.Clear();
+		structDatas.Clear();
 	}
 
 	public static void DeleteVariableScoopData(int scoopIndex)
