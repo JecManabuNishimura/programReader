@@ -347,6 +347,7 @@ public class textGui : MonoBehaviour
 		{
 			te.SelectToStartOfNextWord();
 			ReadText.CreateFuncData(te.SelectedText,line,te.cursorIndex);
+			ReadText.CreateStructData(te.SelectedText, line, te.cursorIndex);
 
 			if (te.SelectedText.Contains("\n"))
 			{

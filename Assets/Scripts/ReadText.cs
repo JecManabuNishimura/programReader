@@ -111,6 +111,8 @@ public partial class ReadText : MonoBehaviour
     // 関数定義一時内容
     static DataTableList.FUNC_DATA funcData = new DataTableList.FUNC_DATA();
 
+    static DataTableList.STRUCT_DATA structData = new DataTableList.STRUCT_DATA();
+
     // 関数情報引き渡し情報
     public static Queue<DataTableList.FUNC_DATA> sendFuncData = new Queue<DataTableList.FUNC_DATA>();
 
@@ -122,6 +124,11 @@ public partial class ReadText : MonoBehaviour
     public static bool sendFuncFlag = false;                // 呼び出し関数引き渡しフラグ
     public static bool returnFuncFlag = false;              // 関数終了フラグ
     public static object returnValue;                       // 戻り値
+
+    public static bool structFlag = false;
+
+    public static int structLevel = 0;
+    static DataTableList.VARIABLE_DATA valData = new DataTableList.VARIABLE_DATA();
 
     //----------デバッグ用--------------------------------------------------
     [SerializeField]
@@ -279,6 +286,7 @@ public partial class ReadText : MonoBehaviour
         data.argumentFlag = false;
         data.skipFlag = false;
         funcData = new DataTableList.FUNC_DATA();
+        structData = new DataTableList.STRUCT_DATA();
     }
 
     // 関数定義作成
@@ -289,6 +297,40 @@ public partial class ReadText : MonoBehaviour
         {
             return;
         }
+
+        // 構造体はここでは読まない
+        if(newSyntax == "struct")
+		{
+            structFlag = true;
+            return;
+		}
+
+        if(structFlag)
+		{
+            if (SymbolCheck(newSyntax))
+			{
+                for (int i = 0; i < newSyntax.Length; i++)
+                {
+                    switch (newSyntax[i])
+                    {
+                        case '{':
+                            data.allNestLevel++;
+                            break;  
+                        case '}':
+                            data.allNestLevel--;
+                            if (data.allNestLevel <= structLevel)
+                            {
+                                structFlag = false;
+							}
+                            break;
+                    }
+                }
+
+            }
+			return;
+		}
+
+
         if (SymbolCheck(newSyntax))
 		{
             for (int i = 0; i < newSyntax.Length; i++)
@@ -409,6 +451,95 @@ public partial class ReadText : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    static public void CreateStructData(string uiText, int line, int cursorIndex)
+	{
+        string newSyntax = uiText.TrimEnd(' ');
+        if (newSyntax == "\n" || newSyntax == "")
+        {
+            return;
+        }
+
+        if (newSyntax == "struct")
+        {
+            structFlag = true;
+            return;
+        }
+
+        if(structFlag)
+		{
+            if (SymbolCheck(newSyntax))
+			{
+                if(structData.name != "")
+				{
+                    for (int i = 0; i < newSyntax.Length; i++)
+                    {
+                        switch (newSyntax[i])
+                        {
+                            case ';':
+                                DataTableList.VARIABLE_DATA val = new DataTableList.VARIABLE_DATA();
+                                val.mold = valData.mold;
+                                val.name = valData.name;
+                                val.type = DataTableList.DATA_TYPE.INT;         // 臨時対応
+                                if(structData.variable_data == null)
+								{
+                                    structData.variable_data = new List<DataTableList.VARIABLE_DATA>();
+								}
+                                structData.variable_data.Add(val);
+                                data = new ReadData();
+                                break;
+                            case '{':
+                                data.allNestLevel++;
+                                break;
+                            case '}':
+                                data.allNestLevel--;
+                                // 構造体の終わり
+                                if(data.allNestLevel <= structLevel)
+								{
+                                    structFlag = false;
+								}
+                                break;
+                        }
+                    }
+                }
+                else
+				{
+                    // 名前が指定されていない。
+                    Debug.Log("構造体の名前が設定されていません。");
+				}
+			}
+            else
+			{
+                if (structData.name == null)
+                {
+                    // 型チェック
+                    if (!CheckMold(newSyntax))
+                    {
+                        structData.name = newSyntax;
+                        structLevel = data.allNestLevel;
+                    }
+                }
+                else
+                {
+                    if (CheckMold(newSyntax))
+                    {
+                        if(valData.mold == null)
+						{
+                            valData.mold = newSyntax;
+                        }
+                    }
+                    else
+					{
+                        // 型が指定されている場合
+                        if(valData.mold != null)
+						{
+                            valData.name = newSyntax;
+                        }
+					}
+                }
+			}
         }
     }
 
