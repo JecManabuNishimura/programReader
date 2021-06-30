@@ -1389,16 +1389,23 @@ public partial class ReadText : MonoBehaviour
 			{
                 foreach(var data in DataTable.GetFunctionDataLIst())
 				{
+
                     var obj = Instantiate(tmpfunObj);
                     var sfd = obj.GetComponent<SetFuncData>();
-                    sfd.SetReturnText(data.returnName);
+                    if (data.returnName != "void")
+					{
+                        
+                        sfd.CreateReturnMold(data.returnName);
+                        
+                    }
                     sfd.SetFuncNameText(data.name);
 
                     if (data.getVariable != null)
                     {
                         foreach (var n in data.getVariable)
                         {
-                            sfd.SetValText(n.mold, n.name,n.value);
+                            sfd.CreateMold((string)n.mold);
+                            //sfd.SetValText(n.mold, n.name,n.value);
                         }
                     }
                     obj.transform.parent = tmpfunTable.transform;

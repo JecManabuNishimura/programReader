@@ -251,8 +251,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -480, y: 0}
-  m_SizeDelta: {x: 960, y: 1080}
+  m_AnchoredPosition: {x: -495, y: 0}
+  m_SizeDelta: {x: 990, y: 1080}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &120332315
 MonoBehaviour:
@@ -847,7 +847,7 @@ MonoBehaviour:
   variableTable: {fileID: 1884098311}
   funcTable: {fileID: 1423563895}
   variaObj: {fileID: 8050595121700473993, guid: 8c836871d82d1c2468d261fdda855400, type: 3}
-  funcObj: {fileID: 953408134267762409, guid: 38cd3b8c135ac244784b26e972822fbb, type: 3}
+  funcObj: {fileID: 177454255218371557, guid: a71c2135858a99344aea1fa0e50e874b, type: 3}
   ArrayDataObj: {fileID: 394456962744484201, guid: fa7705046b646fe42893bd8174ea322f, type: 3}
   ArrayListObj: {fileID: 3483917752085492767, guid: 09b5762ab8ca7ba45bdc8c3a2924d8ef, type: 3}
   skipFLagObj: {fileID: 1951613327}
@@ -895,13 +895,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 964322f62fd01124099c4885bb07e258, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputText:
-  - test
-  - aa
-  - bb
-  - cc
-  - dd
-  selectIndex: 0
 --- !u!4 &1333207795
 Transform:
   m_ObjectHideFlags: 0
