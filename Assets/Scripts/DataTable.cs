@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Linq;
 public class DataTableList
 {
-	public enum DATA_TYPE { INT, PTR, ARRAY };
+	public enum DATA_TYPE { INT, PTR, ARRAY,STRUCT };
 	public struct VARIABLE_DATA
 	{
 
@@ -177,6 +177,8 @@ public static partial class DataTable
 		return "";
 	}
 
+
+
 	public static List<DataTableList.VARIABLE_DATA> GetVarialbleDataList()
 	{
 		return variable;
@@ -187,6 +189,15 @@ public static partial class DataTable
 		return function;
 	}
 
+	public static List<DataTableList.STRUCT_DATA> GetStructDataLIst()
+	{
+		return structDatas;
+	}
+
+	public static void SetStructData(DataTableList.STRUCT_DATA std)
+	{
+		structDatas.Add(std);
+	}
 
 	public static bool SetVarialbleData(string valName,string value, List<int> _arrayCount)
 	{
@@ -217,6 +228,8 @@ public static partial class DataTable
 		}
 		return false;
 	}
+
+	public static bool CheckStructMemberData
 
 	public static bool CheckArrayNumber(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
 	{

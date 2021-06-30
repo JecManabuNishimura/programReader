@@ -70,6 +70,7 @@ public class ReadData
     public bool argumentpassFlag = false;           // 引数開始フラグ
     public bool searchFuncFlag = false;      // 関数検索開始フラグ
     public bool funcCheckFlag = false;              // 関数作成完了フラグ
+    public bool dotFlag = false;                    // どっとフラグ
     
     
     public bool returnFlag = false;                 // 戻り値フラグ
@@ -99,6 +100,17 @@ public class ReadData
     public Stack<int> nestStack = new Stack<int>();
 
     public List<string> substList = new List<string>();
+
+    // 〇個前のデータを取得
+    public string GetBackNumSubstListData(int number)
+	{
+        if(substList.Count - number < 0)
+		{
+            return substList[substList.Count - number];
+        }
+        return substList[0];
+
+    }
 }
 
 
@@ -499,6 +511,7 @@ public partial class ReadText : MonoBehaviour
                                 if(data.allNestLevel <= structLevel)
 								{
                                     structFlag = false;
+                                    DataTable.SetStructData(structData);
 								}
                                 break;
                         }
@@ -1065,9 +1078,11 @@ public partial class ReadText : MonoBehaviour
                     case '<':
                     case '>':
                     case '%':
+                        data.substList.Add(newSyntax[i].ToString());
+                        break;
                     case '.':
                         data.substList.Add(newSyntax[i].ToString());
-                        
+                        data.dotFlag = true;
                         break;
                 }
             }
@@ -1216,6 +1231,18 @@ public partial class ReadText : MonoBehaviour
                     }
                     data.prefixFlag = false;
                 }
+                // ドットがある場合
+                else if(data.dotFlag)
+				{
+                    // どっと前の値が変数だったら
+                    if(CheckVarialbleData(data.GetBackNumSubstListData(2),out DataTableList.VARIABLE_DATA vd))
+					{
+                        if(vd.type == DataTableList.DATA_TYPE.STRUCT)
+						{
+                            
+						}
+					}
+				}
                 else if(data.switchFlag)
 				{
                     if(data.substList[data.substList.Count -2] == "(")
@@ -1266,13 +1293,10 @@ public partial class ReadText : MonoBehaviour
                 else if(data.mold == "")
                 {
                     // 型のチェック
-                    foreach (var st in cName)
-                    {
-                        if (st == newSyntax)
-                        {
-                            data.mold = newSyntax;
-                            return; // 型指定の為、終了
-                        }
+                    if (CheckMold(newSyntax))
+					{
+                        data.mold = newSyntax;
+                        return;                 // 型指定の為、終了
                     }
                 }
                 else
@@ -1614,6 +1638,7 @@ public partial class ReadText : MonoBehaviour
         }
         return false;
     }
+
     static bool CheckVarialbleData(string val,List<int> _arrayList,out DataTableList.VARIABLE_DATA vd)
     {
         foreach (var data in DataTable.GetVarialbleDataList())
@@ -1681,11 +1706,17 @@ public partial class ReadText : MonoBehaviour
                 return true;
             }
         }
+
+        foreach(var st in DataTable.GetStructDataLIst())
+		{
+            if(st.name == tex)
+			{
+                return true;
+			}
+		}
+
         return false;
     }
-
-
-
 }
 
 
