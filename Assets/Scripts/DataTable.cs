@@ -1,10 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using System;
+using System.Runtime.InteropServices;
+
 public class DataTableList
 {
+
 	public enum DATA_TYPE { INT, PTR, ARRAY,STRUCT };
-	public struct VARIABLE_DATA
+
+
+
+	public unsafe struct VARIABLE_DATA
 	{
 
 		public DATA_TYPE type;
@@ -15,10 +22,15 @@ public class DataTableList
 		public int[] array_size;
 		public object[] array_data;
 		public bool selectItemFlag;
+		public string parentValDataName;
+		public object childData;
 	}
+	
 	public struct STRUCT_DATA
 	{
 		public string name;
+		// Listだとメモリー消費が激しいので配列にしたい。
+		// 時間ができたときに修正する
 		public List<VARIABLE_DATA> variable_data;
 	}
 	public struct FUNC_DATA
@@ -33,6 +45,7 @@ public class DataTableList
 
 		public static bool operator ==(FUNC_DATA pro, FUNC_DATA fun)
 		{
+			
 			if ((pro.returnName == fun.returnName) &&
 				(pro.name == fun.name) &&
 				(pro.getVariable.Count == fun.getVariable.Count))
@@ -87,8 +100,6 @@ public static partial class DataTable
 	// PTR = アドレス
 	// ARRAY = 配列
 
-
-	
 	static List<DataTableList.FUNC_DATA> function = new List<DataTableList.FUNC_DATA>();
 	static List<DataTableList.VARIABLE_DATA> variable = new List<DataTableList.VARIABLE_DATA>();
 	static List<DataTableList.STRUCT_DATA> structDatas = new List<DataTableList.STRUCT_DATA>();
@@ -107,8 +118,10 @@ public static partial class DataTable
 		{
 			Debug.Log(d.name + "が、解放されました");
 		}
-		
+
 		variable.RemoveAll(p => p.scoopNum > scoopIndex);
+
+		
 	}
 
 	public static void DeleteVariableData(string name)
@@ -158,12 +171,91 @@ public static partial class DataTable
 		}
 		variable.Add(val);
 	}
-	public static void AddVariableData(DataTableList.VARIABLE_DATA val)
+	public static void AddVariableData(DataTableList.VARIABLE_DATA val,bool structFlag = false)
 	{
+		if(structFlag)
+		{
+			val.type = DataTableList.DATA_TYPE.STRUCT;
+			val.value = FindStructData((string)val.mold);
+			// 子要素をすべて宣言する
+			val.childData = ((DataTableList.STRUCT_DATA)val.value).variable_data;
+		}
+		else
+		{
+			val.type = DataTableList.DATA_TYPE.INT;
+		}
 		
-		val.type = DataTableList.DATA_TYPE.INT;
 		variable.Add(val);
 	}
+
+	public static bool GetVariableChildData(string parentName, string childName, out DataTableList.VARIABLE_DATA vData)
+	{
+		foreach (var pData in variable)
+		{
+			// 親の名前が同じ
+			if (pData.name == parentName)
+			{
+				if (pData.type == DataTableList.DATA_TYPE.STRUCT)
+				{
+					foreach (var cData in (List<DataTableList.VARIABLE_DATA>)pData.childData)
+					{
+						// 子の名前が同じ
+						if (cData.name == childName)
+						{
+							vData = cData;
+							return true;
+						}
+					}
+				}
+				else
+				{
+					vData = new DataTableList.VARIABLE_DATA();
+					return false;
+					
+				}
+			}
+		}
+		vData = new DataTableList.VARIABLE_DATA();
+		return false;
+	}
+		/*
+		if (CheckVarialbleData(data.GetBackNumSubstListData(2), out DataTableList.VARIABLE_DATA vd))
+		{
+			if (vd.type == DataTableList.DATA_TYPE.STRUCT)
+			{
+				DataTableList.STRUCT_DATA sd = (DataTableList.STRUCT_DATA)vd.value;
+				bool memberActiveFLag = false;
+				foreach (var cData in (List<DataTableList.VARIABLE_DATA>)vd.childData)
+				{
+					// メンバーの検索
+					if (cData.name == newSyntax)
+					{
+						// 元とドットを消し、呼び出し先に変更
+						data.substList.RemoveAt(1);
+						data.substList.RemoveAt(1);
+						data.substList.Add(cData.name);
+						data.valData.Push(cData);
+						memberActiveFLag = true;
+					}
+				}
+
+				// メンバー検索
+				foreach (var tmp in sd.variable_data)
+				{
+					if (tmp.name == newSyntax)
+					{
+
+						break;
+					}
+				}
+				if (!memberActiveFLag)
+				{
+					Debug.LogError("メンバーが登録されていません。:" + newSyntax);
+				}
+			}
+		}
+		
+	}*/
 
 	public static object GetVariableValueData(string name)
 	{
@@ -177,6 +269,17 @@ public static partial class DataTable
 		return "";
 	}
 
+	public static DataTableList.STRUCT_DATA FindStructData(string name)
+	{
+		foreach(var data in structDatas)
+		{
+			if(data.name == name)
+			{
+				return data;
+			}
+		}
+		return new DataTableList.STRUCT_DATA();
+	}
 
 
 	public static List<DataTableList.VARIABLE_DATA> GetVarialbleDataList()
@@ -228,8 +331,6 @@ public static partial class DataTable
 		}
 		return false;
 	}
-
-	public static bool CheckStructMemberData
 
 	public static bool CheckArrayNumber(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
 	{

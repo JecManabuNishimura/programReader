@@ -5,9 +5,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Reflection;
 using System;
+using System.Runtime.InteropServices;
 
-
-public class ReadData
+public unsafe class ReadData
 {
     public struct LOOP_TYPE
     {
@@ -55,6 +55,8 @@ public class ReadData
     public string switchLeftName = "";              // switch用の比較データ
     public string caseName = "";                    // case の値
     
+    public IntPtr *parentValDataName;               // 親データのポインタ
+    
     public bool argumentFlag = false;               // 引数フラグ
     public bool argumentCanmaFlag = true;           // 引数カンマフラグ
     public bool substitutionFlag = false;           // 代入フラグ
@@ -65,6 +67,7 @@ public class ReadData
     public bool loopFlag = false;                   // ループ用フラグ
     public bool prefixFlag = false;                 // 前置フラグ
     public bool arrayFlag = false;                  // 配列用フラグ
+    public bool structFlag = false;                 // 構造体用フラグ
     public bool nextCaseFlag = false;               // case用のフラグ
     public bool breakFlag = false;                  // break用フラグ
     public bool argumentpassFlag = false;           // 引数開始フラグ
@@ -74,11 +77,11 @@ public class ReadData
     
     
     public bool returnFlag = false;                 // 戻り値フラグ
-    public bool callFuncEndFlag = false;     // ();回避フラグ
+    public bool callFuncEndFlag = false;            // ();回避フラグ
     public bool bracketsEndFlag = false;            // 中カッコ終わりフラグ
-    public bool nextLoopFlag;                // for文最後の処理フラグ
-    public bool loopEndFlag = false;         // for文終了フラグ
-    public bool newLoopFlag = false;         // インクリメントデクリメント
+    public bool nextLoopFlag;                       // for文最後の処理フラグ
+    public bool loopEndFlag = false;                // for文終了フラグ
+    public bool newLoopFlag = false;                // インクリメントデクリメント
 
     public LOOP_TYPE_NAME loopType = new LOOP_TYPE_NAME();
 
@@ -95,11 +98,11 @@ public class ReadData
 
     public textGui.LOOP_NUMBER loopStep = textGui.LOOP_NUMBER.NONE;
 
-
     public Stack<SCOOP_NUM> stack = new Stack<SCOOP_NUM>();
     public Stack<int> nestStack = new Stack<int>();
 
     public List<string> substList = new List<string>();
+    public Stack<DataTableList.VARIABLE_DATA> valData = new Stack<DataTableList.VARIABLE_DATA>();
 
     // 〇個前のデータを取得
     public string GetBackNumSubstListData(int number)
@@ -109,11 +112,8 @@ public class ReadData
             return substList[substList.Count - number];
         }
         return substList[0];
-
     }
 }
-
-
 
 public partial class ReadText : MonoBehaviour
 {
@@ -181,32 +181,33 @@ public partial class ReadText : MonoBehaviour
 
     void Start()
     {
-		/*
-         * メモ：C＃でメモリーを扱いたい場合は、unsafeを使うとできる。
-         * unsafeオプションをONにする必要がある。
-         * Unity側のplayerSettingと新しくAssenblyDefinitionを追加する必要がある。
-         * ただし、アドレスは数字のみの表記になる
+
+        /*
+        * メモ：C＃でメモリーを扱いたい場合は、unsafeを使うとできる。
+        * unsafeオプションをONにする必要がある。
+        * Unity側のplayerSettingと新しくAssenblyDefinitionを追加する必要がある。
+        * ただし、アドレスは数字のみの表記になる
         unsafe
-		{
-            
-            int* test = &test2;
-            Debug.Log((long)test);
-        }
-        
-        
-        unsafe
-		{
-            for(int i =0; i<10; i++)
-			{
-                fixed(int *p = &test[i])
-				{
-                    Debug.Log((int)p);
-                }
-			}
-		}
+        {
+           int test2;
+           int* test = &test2;
+           Debug.Log((long)test);
+       }
+
+
+       unsafe
+       {
+           for(int i =0; i<10; i++)
+           {
+               fixed(int *p = &test[i])
+               {
+                   Debug.Log((int)p);
+               }
+           }
+       }
         */
 
-		tmpvObj = variaObj;
+        tmpvObj = variaObj;
         tmpvTable = variableTable;
 
         tmpfunObj = funcObj;
@@ -255,7 +256,7 @@ public partial class ReadText : MonoBehaviour
     {
         "[","{","}","(",")","=",";",
         ",","+","-","*","/","<",">",
-        "|","]","+",":",
+        "|","]","+",":","."
     };
 
 	static void ResetData()
@@ -286,6 +287,8 @@ public partial class ReadText : MonoBehaviour
         data.loopFlag = false;
         data.skipFlag = false;
         data.arrayFlag = false;
+
+
         data.loopNestLevel.Clear();
 
         ResetData();
@@ -319,6 +322,7 @@ public partial class ReadText : MonoBehaviour
 
         if(structFlag)
 		{
+            /*
             if (SymbolCheck(newSyntax))
 			{
                 for (int i = 0; i < newSyntax.Length; i++)
@@ -338,7 +342,7 @@ public partial class ReadText : MonoBehaviour
                     }
                 }
 
-            }
+            }*/
 			return;
 		}
 
@@ -430,7 +434,7 @@ public partial class ReadText : MonoBehaviour
                 if (!data.argumentFlag)
                 {
                     // 型チェック
-                    if (CheckMold(newSyntax))
+                    if (CheckMold(newSyntax,out bool structFlag))
                     {
                         // 戻り値の型
                         funcData.returnName = newSyntax;
@@ -450,7 +454,7 @@ public partial class ReadText : MonoBehaviour
                     if (data.mold == "")
                     {
                         // 型チェック
-                        if (CheckMold(newSyntax))
+                        if (CheckMold(newSyntax, out bool structFlag))
                         {
                             // 一旦データ型を保存
                             data.mold = newSyntax;
@@ -528,7 +532,7 @@ public partial class ReadText : MonoBehaviour
                 if (structData.name == null)
                 {
                     // 型チェック
-                    if (!CheckMold(newSyntax))
+                    if (!CheckMold(newSyntax, out bool structFlag))
                     {
                         structData.name = newSyntax;
                         structLevel = data.allNestLevel;
@@ -536,7 +540,7 @@ public partial class ReadText : MonoBehaviour
                 }
                 else
                 {
-                    if (CheckMold(newSyntax))
+                    if (CheckMold(newSyntax, out bool structFlag))
                     {
                         if(valData.mold == null)
 						{
@@ -556,7 +560,7 @@ public partial class ReadText : MonoBehaviour
         }
     }
 
-    static public void GetText(string uiText,int line,int cursorIndex)
+    static unsafe public void GetText(string uiText,int line,int cursorIndex)
 	{
         string newSyntax = uiText.TrimEnd(' ');
 
@@ -1212,14 +1216,14 @@ public partial class ReadText : MonoBehaviour
 			{
                 data.substList.Add(newSyntax);
                 // インクリメント・デクリメント用前置型
-                if(data.prefixFlag)
+                if (data.prefixFlag)
                 {
                     // 変数の場合
                     if (CheckVarialbleData(newSyntax))
                     {
                         List<string> tmp = new List<string>();
                         tmp.Add(newSyntax); tmp.Add(data.substList[data.substList.Count - 2]); tmp.Add("1");
-                        Substitution(tmp, newSyntax,true);
+                        Substitution(tmp, newSyntax, true);
                         data.substList.RemoveAt(data.substList.Count - 3);
                         data.substList.RemoveAt(data.substList.Count - 2);
                         data.substList[data.substList.Count - 1] = (string)DataTable.GetVariableValueData(newSyntax);
@@ -1232,24 +1236,22 @@ public partial class ReadText : MonoBehaviour
                     data.prefixFlag = false;
                 }
                 // ドットがある場合
-                else if(data.dotFlag)
-				{
-                    // どっと前の値が変数だったら
-                    if(CheckVarialbleData(data.GetBackNumSubstListData(2),out DataTableList.VARIABLE_DATA vd))
+                else if (data.dotFlag)
+                {
+                    // ドット前の値が変数だったら
+                    if (DataTable.GetVariableChildData(data.GetBackNumSubstListData(2), newSyntax, out DataTableList.VARIABLE_DATA vData))
 					{
-                        if(vd.type == DataTableList.DATA_TYPE.STRUCT)
-						{
-                            
-						}
-					}
-				}
-                else if(data.switchFlag)
-				{
-                    if(data.substList[data.substList.Count -2] == "(")
-					{
+                        data.valData.Push(vData);
+                       
+                    }
+                }
+                else if (data.switchFlag)
+                {
+                    if (data.substList[data.substList.Count - 2] == "(")
+                    {
                         // 予約語じゃないとき
-                        if((!CheckReservedWord(newSyntax)))
-						{
+                        if ((!CheckReservedWord(newSyntax)))
+                        {
                             string name = "";
                             // コロン入力時に値を比較する
                             if (int.TryParse(newSyntax, out int result))
@@ -1268,34 +1270,35 @@ public partial class ReadText : MonoBehaviour
                         }
                     }
                     else
-					{
+                    {
                         // カッコが必要だよ
-					}
-				}
+                    }
+                }
                 else if (data.substitutionFlag || data.ifFlag)
-				{
+                {
                     // 左辺が無い場合
-                    if(!data.ifFlag && data.leftValname == "")
-					{
+                    if (!data.ifFlag && data.leftValname == "")
+                    {
                         data.leftValname = data.substList[data.substList.Count - 2];
                         data.substList.RemoveAt(data.substList.Count - 2);
                     }
                     else
-					{
+                    {
                         // 変数だった場合
                         if (CheckVarialbleData(newSyntax))
-						{
+                        {
                             DataTable.SetVariableItemFlag(newSyntax);
-						}
+                        }
                     }
-				}
+                }
                 //else if (mold == "" && fncData.returnName == null)
-                else if(data.mold == "")
+                else if (data.mold == "")
                 {
                     // 型のチェック
-                    if (CheckMold(newSyntax))
-					{
+                    if (CheckMold(newSyntax, out bool structFlag))
+                    {
                         data.mold = newSyntax;
+                        data.structFlag = structFlag;
                         return;                 // 型指定の為、終了
                     }
                 }
@@ -1311,7 +1314,7 @@ public partial class ReadText : MonoBehaviour
                             data.substList.RemoveAt(data.substList.Count - 1);
                         }
                     }
-				}
+                }
             }
             // 中カッコが終わっている
             if(data.bracketsEndFlag)
@@ -1428,11 +1431,13 @@ public partial class ReadText : MonoBehaviour
             DataTableList.VARIABLE_DATA ValData = new DataTableList.VARIABLE_DATA() ;
             ValData.name = name;
             ValData.mold = setMold;
-            ValData.value = "0";
+            ValData.value = 0;
             ValData.scoopNum = data.allNestLevel;
+
             // 配列ONの場合
-            if(data.arrayFlag)   DataTable.AddVariableData(ValData, data.arrayCountList);
-            else            DataTable.AddVariableData(ValData);
+            if (data.arrayFlag)         DataTable.AddVariableData(ValData, data.arrayCountList);
+            else if(data.structFlag)    DataTable.AddVariableData(ValData,data.structFlag);
+            else                        DataTable.AddVariableData(ValData);
         }
     }
 
@@ -1696,13 +1701,14 @@ public partial class ReadText : MonoBehaviour
         return false;
     }
 
-    static bool CheckMold(string tex)
+    static bool CheckMold(string tex,out bool structFlag)
 	{
         // 型チェック
         foreach (var st in cName)
         {
             if (st == tex)
             {
+                structFlag = false;
                 return true;
             }
         }
@@ -1711,10 +1717,11 @@ public partial class ReadText : MonoBehaviour
 		{
             if(st.name == tex)
 			{
+                structFlag = true;
                 return true;
 			}
 		}
-
+        structFlag = false;
         return false;
     }
 }
