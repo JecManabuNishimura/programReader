@@ -4,28 +4,28 @@ using System.Linq;
 using System;
 using System.Runtime.InteropServices;
 
+public class VARIABLE_DATA
+{
+	/* はじめ構造体で作っていたが、構造体は間接参照ができなくなってしまう。
+	 * そのため、必ず、クラスのメンバーになっていなければならない。
+	 * https://ufcpp.net/study/csharp/oo_reference.html
+	 */
+	public enum DATA_TYPE { INT, PTR, ARRAY, STRUCT };
+
+	public DATA_TYPE type;
+	public string name;
+	public object mold;
+	public object value;
+	public int scoopNum;
+	public int[] array_size;
+	public object[] array_data;
+	public bool selectItemFlag;
+	public string parentValDataName;
+	public object childData;
+}
+
 public class DataTableList
 {
-
-	public enum DATA_TYPE { INT, PTR, ARRAY,STRUCT };
-
-
-
-	public unsafe struct VARIABLE_DATA
-	{
-
-		public DATA_TYPE type;
-		public string name;
-		public object mold;
-		public object value;
-		public int scoopNum;
-		public int[] array_size;
-		public object[] array_data;
-		public bool selectItemFlag;
-		public string parentValDataName;
-		public object childData;
-	}
-	
 	public struct STRUCT_DATA
 	{
 		public string name;
@@ -35,7 +35,6 @@ public class DataTableList
 	}
 	public struct FUNC_DATA
 	{
-
 		public string name;
 		public int line;
 		public int begin;
@@ -87,10 +86,6 @@ public class DataTableList
 			return true;
 		}
 	}
-
-
-
-
 }
 
 
@@ -101,7 +96,7 @@ public static partial class DataTable
 	// ARRAY = 配列
 
 	static List<DataTableList.FUNC_DATA> function = new List<DataTableList.FUNC_DATA>();
-	static List<DataTableList.VARIABLE_DATA> variable = new List<DataTableList.VARIABLE_DATA>();
+	static List<VARIABLE_DATA> variable = new List<VARIABLE_DATA>();
 	static List<DataTableList.STRUCT_DATA> structDatas = new List<DataTableList.STRUCT_DATA>();
 	public static void ClearData()
 	{
@@ -113,7 +108,7 @@ public static partial class DataTable
 	public static void DeleteVariableScoopData(int scoopIndex)
 	{
 		//データを削除する（解放された)
-		IEnumerable<DataTableList.VARIABLE_DATA> data = variable.Where(n => n.scoopNum > scoopIndex);
+		IEnumerable<VARIABLE_DATA> data = variable.Where(n => n.scoopNum > scoopIndex);
 		foreach(var d in data)
 		{
 			Debug.Log(d.name + "が、解放されました");
@@ -150,9 +145,9 @@ public static partial class DataTable
 		function.Add(fnc);
 	}
 
-	public static void AddVariableData(DataTableList.VARIABLE_DATA val, List<int> arraySize)
+	public static void AddVariableData(VARIABLE_DATA val, List<int> arraySize, ref VARIABLE_DATA outData)
 	{
-		val.type = DataTableList.DATA_TYPE.ARRAY;
+		val.type = VARIABLE_DATA.DATA_TYPE.ARRAY;
 		int arraynum = 1;
 		int count = 0;
 		val.array_size = new int[arraySize.Count];
@@ -170,34 +165,32 @@ public static partial class DataTable
 			val.array_data[i] = "null";
 		}
 		variable.Add(val);
+		outData = val;
 	}
-	public static void AddVariableData(DataTableList.VARIABLE_DATA val,bool structFlag = false)
+	public static void AddVariableData(VARIABLE_DATA val,out VARIABLE_DATA outData)
 	{
-		if(structFlag)
+		if(val.type == VARIABLE_DATA.DATA_TYPE.STRUCT)
 		{
-			val.type = DataTableList.DATA_TYPE.STRUCT;
 			val.value = FindStructData((string)val.mold);
 			// 子要素をすべて宣言する
 			val.childData = ((DataTableList.STRUCT_DATA)val.value).variable_data;
+
 		}
-		else
-		{
-			val.type = DataTableList.DATA_TYPE.INT;
-		}
-		
+		val.value = 0;
 		variable.Add(val);
+		outData = variable[variable.Count -1];
 	}
 
-	public static bool GetVariableChildData(string parentName, string childName, out DataTableList.VARIABLE_DATA vData)
+	public static bool GetVariableChildData(string parentName, string childName, out VARIABLE_DATA vData)
 	{
 		foreach (var pData in variable)
 		{
 			// 親の名前が同じ
 			if (pData.name == parentName)
 			{
-				if (pData.type == DataTableList.DATA_TYPE.STRUCT)
+				if (pData.type == VARIABLE_DATA.DATA_TYPE.STRUCT)
 				{
-					foreach (var cData in (List<DataTableList.VARIABLE_DATA>)pData.childData)
+					foreach (var cData in (List<VARIABLE_DATA>)pData.childData)
 					{
 						// 子の名前が同じ
 						if (cData.name == childName)
@@ -209,23 +202,23 @@ public static partial class DataTable
 				}
 				else
 				{
-					vData = new DataTableList.VARIABLE_DATA();
+					vData = new VARIABLE_DATA();
 					return false;
 					
 				}
 			}
 		}
-		vData = new DataTableList.VARIABLE_DATA();
+		vData = new VARIABLE_DATA();
 		return false;
 	}
 		/*
-		if (CheckVarialbleData(data.GetBackNumSubstListData(2), out DataTableList.VARIABLE_DATA vd))
+		if (CheckVarialbleData(data.GetBackNumSubstListData(2), out VARIABLE_DATA vd))
 		{
 			if (vd.type == DataTableList.DATA_TYPE.STRUCT)
 			{
 				DataTableList.STRUCT_DATA sd = (DataTableList.STRUCT_DATA)vd.value;
 				bool memberActiveFLag = false;
-				foreach (var cData in (List<DataTableList.VARIABLE_DATA>)vd.childData)
+				foreach (var cData in (List<VARIABLE_DATA>)vd.childData)
 				{
 					// メンバーの検索
 					if (cData.name == newSyntax)
@@ -257,16 +250,18 @@ public static partial class DataTable
 		
 	}*/
 
-	public static object GetVariableValueData(string name)
+	public static bool GetVariableValueData(string name,out VARIABLE_DATA vData)
 	{
 		foreach(var data in variable)
 		{
 			if(data.name == name)
 			{
-				return data.value;
+				vData = data;
+				return true;
 			}
 		}
-		return "";
+		vData = new VARIABLE_DATA();
+		return false;
 	}
 
 	public static DataTableList.STRUCT_DATA FindStructData(string name)
@@ -282,7 +277,7 @@ public static partial class DataTable
 	}
 
 
-	public static List<DataTableList.VARIABLE_DATA> GetVarialbleDataList()
+	public static List<VARIABLE_DATA> GetVarialbleDataList()
 	{
 		return variable;
 	}
@@ -302,37 +297,27 @@ public static partial class DataTable
 		structDatas.Add(std);
 	}
 
-	public static bool SetVarialbleData(string valName,string value, List<int> _arrayCount)
+	public static bool SetVarialbleData(ref VARIABLE_DATA valData,string value, List<int> _arrayCount)
 	{
-		for(int i =0; i < variable.Count; i++)
+		if(valData.type == VARIABLE_DATA.DATA_TYPE.ARRAY)
 		{
-			if (variable[i].name == valName)
+			// 要素番号が存在するか確認
+			if(!CheckArrayNumber(valData, _arrayCount))
 			{
-				if(variable[i].type == DataTableList.DATA_TYPE.ARRAY)
-				{
-					DataTableList.VARIABLE_DATA vd = variable[i];
-					// 要素番号が存在するか確認
-					if(!CheckArrayNumber(vd,_arrayCount))
-					{
-						return false;
-					}
-					vd.array_data[(int)GetOneArrayNumber(vd,_arrayCount)] = value;
-					variable[i] = vd;
-					return true;
-				}
-				else
-				{
-					DataTableList.VARIABLE_DATA vd = variable[i];
-					vd.value = value;
-					variable[i] = vd;
-					return true;
-				}
+				return false;
 			}
+			valData.array_data[(int)GetOneArrayNumber(valData, _arrayCount)] = value;
+			return true;
 		}
-		return false;
+		else
+		{
+			valData.value = value;
+			return true;
+		}
+
 	}
 
-	public static bool CheckArrayNumber(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
+	public static bool CheckArrayNumber(VARIABLE_DATA vd, List<int> _arrayCount)
 	{
 		for (int ci = 0; ci < _arrayCount.Count; ci++)
 		{
@@ -347,18 +332,18 @@ public static partial class DataTable
 		return true;
 	}
 
-	public static object GetOneArrayNumber(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
+	public static object GetOneArrayNumber(VARIABLE_DATA vd, List<int> _arrayCount)
 	{
 		int number = _arrayCount.Count;
 		return ChengeOneArray(vd, _arrayCount, ref number);
 	}
 
-	public static object GetOneArrayNumberData(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount)
+	public static object GetOneArrayNumberData(VARIABLE_DATA vd, List<int> _arrayCount)
 	{
 		return vd.array_data[(int)GetOneArrayNumber(vd,_arrayCount)];
 	}
 
-	public static string GetArrayAddress(DataTableList.VARIABLE_DATA vd, int eleNum)
+	public static string GetArrayAddress(VARIABLE_DATA vd, int eleNum)
 	{
 		int mod = eleNum;
 		int number = 0;
@@ -367,7 +352,7 @@ public static partial class DataTable
 	}
 	
 	
-	public static string ReturnArrayAddress(DataTableList.VARIABLE_DATA vd, ref int mod, ref int number)
+	public static string ReturnArrayAddress(VARIABLE_DATA vd, ref int mod, ref int number)
 	{
 		if(number == vd.array_size.Length - 1)
 		{
@@ -387,7 +372,7 @@ public static partial class DataTable
 
 	}
 
-	public static int ChengeOneArray(DataTableList.VARIABLE_DATA vd, List<int> _arrayCount, ref int number)
+	public static int ChengeOneArray(VARIABLE_DATA vd, List<int> _arrayCount, ref int number)
 	{
 		int calc = 1;
 		
@@ -425,7 +410,7 @@ public static partial class DataTable
 				{
 					if(function[i].getVariable[y].name == valName)
 					{
-						DataTableList.VARIABLE_DATA vd = function[i].getVariable[y];
+						VARIABLE_DATA vd = function[i].getVariable[y];
 						vd.value = value;
 						function[i].getVariable[y] = vd;
 						return true;
@@ -442,7 +427,7 @@ public static partial class DataTable
 		{
 			if(variable[i].name == name)
 			{
-				DataTableList.VARIABLE_DATA data = variable[i];
+				VARIABLE_DATA data = variable[i];
 				data.selectItemFlag = true;
 				variable[i] = data;
 				return;

@@ -51,7 +51,11 @@ public unsafe class ReadData
     public string mold = "";                        // データ型
     public string funcName = "";                    // 関数名
     public string variableName = "";                // 変数名
-    public string leftValname = "";                 // 左辺変数
+    //public string leftValname = "";                 // 左辺変数
+    public VARIABLE_DATA leftValue = 
+        new VARIABLE_DATA(); // 左辺変数
+    public VARIABLE_DATA tmpValue =
+        new VARIABLE_DATA(); // 左辺変数
     public string switchLeftName = "";              // switch用の比較データ
     public string caseName = "";                    // case の値
     
@@ -62,7 +66,7 @@ public unsafe class ReadData
     public bool substitutionFlag = false;           // 代入フラグ
     public bool ifFlag = false;                     // if文フラグ
     public bool ifCheckFlag = false;                // if文判定後フラグ
-    public bool skipFlag = false;            // スキップフラグ
+    public bool skipFlag = false;                   // スキップフラグ
     public bool switchFlag = false;                 // スイッチフラグ
     public bool loopFlag = false;                   // ループ用フラグ
     public bool prefixFlag = false;                 // 前置フラグ
@@ -71,7 +75,7 @@ public unsafe class ReadData
     public bool nextCaseFlag = false;               // case用のフラグ
     public bool breakFlag = false;                  // break用フラグ
     public bool argumentpassFlag = false;           // 引数開始フラグ
-    public bool searchFuncFlag = false;      // 関数検索開始フラグ
+    public bool searchFuncFlag = false;             // 関数検索開始フラグ
     public bool funcCheckFlag = false;              // 関数作成完了フラグ
     public bool dotFlag = false;                    // どっとフラグ
     
@@ -102,7 +106,7 @@ public unsafe class ReadData
     public Stack<int> nestStack = new Stack<int>();
 
     public List<string> substList = new List<string>();
-    public Stack<DataTableList.VARIABLE_DATA> valData = new Stack<DataTableList.VARIABLE_DATA>();
+    
 
     // 〇個前のデータを取得
     public string GetBackNumSubstListData(int number)
@@ -140,7 +144,9 @@ public partial class ReadText : MonoBehaviour
     public static bool structFlag = false;
 
     public static int structLevel = 0;
-    static DataTableList.VARIABLE_DATA valData = new DataTableList.VARIABLE_DATA();
+    static VARIABLE_DATA valData = new VARIABLE_DATA();
+
+    static Stack<VARIABLE_DATA> varData = new Stack<VARIABLE_DATA>();
 
     //----------デバッグ用--------------------------------------------------
     [SerializeField]
@@ -223,7 +229,7 @@ public partial class ReadText : MonoBehaviour
         skipFLagObj.text += "nextLoopFlag:"     + data.nextLoopFlag.ToString() + "\n";
         skipFLagObj.text += "loopStep:"         + data.loopStep.ToString() + "\n";
         skipFLagObj.text += "loopType:"         + data.loopType.ToString() + "\n";
-        skipFLagObj.text += "leftValueName:"    + data.leftValname.ToString() + "\n";
+        skipFLagObj.text += "leftValueName:"    + data.leftValue.name + "\n";
         skipFLagObj.text += "substList:" ;
         foreach (var str in data.substList)
 		{
@@ -262,11 +268,12 @@ public partial class ReadText : MonoBehaviour
 	static void ResetData()
 	{
         fncData = new DataTableList.FUNC_DATA();
-        fncData.getVariable = new List<DataTableList.VARIABLE_DATA>();
+        fncData.getVariable = new List<VARIABLE_DATA>();
         data.argumentFlag = false;
         data.mold = "";
         data.argumentCanmaFlag = true;
-        data.leftValname = "";
+        data.leftValue = new VARIABLE_DATA();
+        data.tmpValue = new VARIABLE_DATA();
         data.substitutionFlag = false;
         data.ifFlag = false;
         data.substList.Clear();
@@ -363,12 +370,12 @@ public partial class ReadText : MonoBehaviour
                             if (data.mold != "" && data.variableName != "")
                             {                              
                                 // データの確定
-                                DataTableList.VARIABLE_DATA vari = new DataTableList.VARIABLE_DATA();
+                               VARIABLE_DATA vari = new VARIABLE_DATA();
                                 vari.mold = data.mold;
                                 vari.name = data.variableName;
-                                vari.type = DataTableList.DATA_TYPE.INT;
+                                vari.type = VARIABLE_DATA.DATA_TYPE.INT;
                                 if(funcData.getVariable == null)
-                                    funcData.getVariable = new List<DataTableList.VARIABLE_DATA>();
+                                    funcData.getVariable = new List<VARIABLE_DATA>();
                                 funcData.getVariable.Add(vari);
                             }
 
@@ -382,7 +389,7 @@ public partial class ReadText : MonoBehaviour
                                     funcData.begin = funcData.end = cursorIndex;
                                     if(funcData.getVariable == null)
 									{
-                                        funcData.getVariable = new List<DataTableList.VARIABLE_DATA>();
+                                        funcData.getVariable = new List<VARIABLE_DATA>();
 									}
                                     prottypeFuncDataList.Add(funcData);
                                     funcData = new DataTableList.FUNC_DATA();
@@ -416,7 +423,7 @@ public partial class ReadText : MonoBehaviour
                         funcData.end = cursorIndex;
                         if (funcData.getVariable == null)
                         {
-                            funcData.getVariable = new List<DataTableList.VARIABLE_DATA>();
+                            funcData.getVariable = new List<VARIABLE_DATA>();
                         }
                         DataTable.AddFuncData(funcData);
                         funcData = new DataTableList.FUNC_DATA();
@@ -495,13 +502,13 @@ public partial class ReadText : MonoBehaviour
                         switch (newSyntax[i])
                         {
                             case ';':
-                                DataTableList.VARIABLE_DATA val = new DataTableList.VARIABLE_DATA();
+                               VARIABLE_DATA val = new VARIABLE_DATA();
                                 val.mold = valData.mold;
                                 val.name = valData.name;
-                                val.type = DataTableList.DATA_TYPE.INT;         // 臨時対応
+                                val.type = VARIABLE_DATA.DATA_TYPE.INT;         // 臨時対応
                                 if(structData.variable_data == null)
 								{
-                                    structData.variable_data = new List<DataTableList.VARIABLE_DATA>();
+                                    structData.variable_data = new List<VARIABLE_DATA>();
 								}
                                 structData.variable_data.Add(val);
                                 data = new ReadData();
@@ -648,12 +655,12 @@ public partial class ReadText : MonoBehaviour
                             else
 							{
                                 // 変数宣言
-                                if (!CheckVarialbleData(data.leftValname))
+                                if (data.tmpValue.name != null && data.tmpValue.mold != null)
                                 {
-                                    VariableDeclaration(data.leftValname, data.mold);
+                                    VariableDeclaration(data.tmpValue,ref data.leftValue);
                                 }
                                 // 代入処理
-                                Substitution(data.substList, data.leftValname);
+                                Substitution(data.substList, ref data.leftValue);
                             }
 
                             // for文チェック
@@ -776,7 +783,7 @@ public partial class ReadText : MonoBehaviour
                                     {
                                         data.nextLoopFlag = true;
                                         // 代入処理
-                                        Substitution(data.substList, data.leftValname);
+                                        Substitution(data.substList,ref data.leftValue);
                                     }
                                     break;
                                 case ReadData.LOOP_TYPE_NAME.WHILE:
@@ -925,6 +932,7 @@ public partial class ReadText : MonoBehaviour
                         ScoopPop();
                         break;
                     case '=':
+                        data.leftValue = data.tmpValue;
                         if (data.skipFlag && data.skipNestLevel != -1)
                         {
                             // スキップされる行数を越した場合
@@ -946,27 +954,10 @@ public partial class ReadText : MonoBehaviour
                             // += -=　の場合
                             if (data.substList[data.substList.Count - 1] == "-" || data.substList[data.substList.Count - 1] == "+")
                             {
-                                data.leftValname = data.substList[data.substList.Count - 2];
+                                data.leftValue.name = data.substList[data.substList.Count - 2];
                             }
                         }
-                        else if(data.mold == "")
-						{
 
-                            data.leftValname = data.substList[data.substList.Count - 1];
-
-                            data.substList.RemoveAt(data.substList.Count - 1);
-
-						}
-                        // 変数宣言の場合
-                        else if(data.mold != "")
-						{
-                            // 変数宣言
-                            if (!CheckVarialbleData(data.leftValname))
-                            {
-                                VariableDeclaration(data.leftValname, data.mold);
-                            }
-                        }
-                        
                         break;
                     case ',':
                         // カンマあり
@@ -1030,7 +1021,8 @@ public partial class ReadText : MonoBehaviour
                                 // 変数が定義されている場合
                                 if(CheckVarialbleData(data.substList[data.substList.Count - 1]))
 								{
-                                    data.arrayCountList.Add(int.Parse( (string)DataTable.GetVariableValueData(data.substList[data.substList.Count - 1])));
+                                    DataTable.GetVariableValueData(data.substList[data.substList.Count - 1],out VARIABLE_DATA vData);
+                                    data.arrayCountList.Add(int.Parse((string)vData.value));
                                     data.substList.RemoveAt(data.substList.Count - 1);
                                 }
 							}
@@ -1040,7 +1032,7 @@ public partial class ReadText : MonoBehaviour
                                 // 代入の場合
                                 if(data.substitutionFlag)
 								{
-                                    DataTableList.VARIABLE_DATA vd;
+                                   VARIABLE_DATA vd;
                                     if (CheckVarialbleData(data.substList[data.substList.Count - 1], data.arrayCountList, out vd))
                                     {
                                         data.substList.RemoveAt(data.substList.Count - 1);
@@ -1061,9 +1053,9 @@ public partial class ReadText : MonoBehaviour
                             else
                             {
                                 // 変数が定義されている場合
-                                if (CheckVarialbleData(data.substList[data.substList.Count - 1]))
-                                {
-                                    data.caseName = (string)DataTable.GetVariableValueData(data.substList[data.substList.Count - 1]);
+                                if (DataTable.GetVariableValueData(data.substList[data.substList.Count - 1], out VARIABLE_DATA vdata))
+								{
+                                    data.caseName = vdata.value.ToString();
                                 }
                             }
                             // スイッチ条件
@@ -1196,7 +1188,7 @@ public partial class ReadText : MonoBehaviour
                     // 変数名
                     else
                     {
-                        DataTableList.VARIABLE_DATA vd = new DataTableList.VARIABLE_DATA();
+                       VARIABLE_DATA vd = newVARIABLE_DATA();
                         vd.name = newSyntax;
                         vd.mold = mold;
                         vd.value = "0";
@@ -1223,10 +1215,10 @@ public partial class ReadText : MonoBehaviour
                     {
                         List<string> tmp = new List<string>();
                         tmp.Add(newSyntax); tmp.Add(data.substList[data.substList.Count - 2]); tmp.Add("1");
-                        Substitution(tmp, newSyntax, true);
+                        Substitution(tmp, ref data.leftValue, true);
                         data.substList.RemoveAt(data.substList.Count - 3);
                         data.substList.RemoveAt(data.substList.Count - 2);
-                        data.substList[data.substList.Count - 1] = (string)DataTable.GetVariableValueData(newSyntax);
+                        data.substList[data.substList.Count - 1] = data.leftValue.value.ToString();
                     }
                     else
                     {
@@ -1239,9 +1231,9 @@ public partial class ReadText : MonoBehaviour
                 else if (data.dotFlag)
                 {
                     // ドット前の値が変数だったら
-                    if (DataTable.GetVariableChildData(data.GetBackNumSubstListData(2), newSyntax, out DataTableList.VARIABLE_DATA vData))
+                    if (DataTable.GetVariableChildData(data.GetBackNumSubstListData(2), newSyntax, out VARIABLE_DATA vData))
 					{
-                        data.valData.Push(vData);
+                        varData.Push(vData);
                        
                     }
                 }
@@ -1263,7 +1255,8 @@ public partial class ReadText : MonoBehaviour
                                 // 変数が定義されている場合
                                 if (CheckVarialbleData(newSyntax))
                                 {
-                                    name = (string)DataTable.GetVariableValueData(data.substList[data.substList.Count - 1]);
+                                    DataTable.GetVariableValueData(data.substList[data.substList.Count - 1], out VARIABLE_DATA vARIABLE_DATA);
+                                    name = vARIABLE_DATA.value.ToString();
                                 }
                             }
                             data.switchLeftName = name;
@@ -1277,9 +1270,9 @@ public partial class ReadText : MonoBehaviour
                 else if (data.substitutionFlag || data.ifFlag)
                 {
                     // 左辺が無い場合
-                    if (!data.ifFlag && data.leftValname == "")
+                    if (!data.ifFlag && data.leftValue.name == "")
                     {
-                        data.leftValname = data.substList[data.substList.Count - 2];
+                        data.leftValue.name = data.substList[data.substList.Count - 2];
                         data.substList.RemoveAt(data.substList.Count - 2);
                     }
                     else
@@ -1288,18 +1281,35 @@ public partial class ReadText : MonoBehaviour
                         if (CheckVarialbleData(newSyntax))
                         {
                             DataTable.SetVariableItemFlag(newSyntax);
+                            data.substList.RemoveAt(data.substList.Count - 2);
+                            DataTable.GetVariableValueData(newSyntax, out VARIABLE_DATA vARIABLE_DATA);
+                            data.substList.Add(vARIABLE_DATA.value.ToString());
                         }
                     }
                 }
                 //else if (mold == "" && fncData.returnName == null)
-                else if (data.mold == "")
+                else if (data.tmpValue.mold == null)
                 {
                     // 型のチェック
                     if (CheckMold(newSyntax, out bool structFlag))
                     {
-                        data.mold = newSyntax;
-                        data.structFlag = structFlag;
+                        data.tmpValue.mold = newSyntax;
+                        data.tmpValue.type = structFlag ? VARIABLE_DATA.DATA_TYPE.STRUCT : VARIABLE_DATA.DATA_TYPE.INT;
+                        //data.structFlag = structFlag;
                         return;                 // 型指定の為、終了
+                    }
+                    else
+					{
+                        data.substList.RemoveAt(data.substList.Count - 1);
+                        if (!DataTable.GetVariableValueData(newSyntax, out data.tmpValue))
+						{
+                            Debug.LogError("変数が宣言されていません。:" + newSyntax);
+						}
+                        else
+						{
+                            data.leftValue = data.tmpValue;
+                            data.tmpValue = new VARIABLE_DATA();
+                        }
                     }
                 }
                 else
@@ -1307,9 +1317,9 @@ public partial class ReadText : MonoBehaviour
                     if (!data.returnFlag)
                     {
                         // 変数名が設定されていない場合
-                        if (data.leftValname == "")
+                        if (data.tmpValue.name == null)
                         {
-                            data.leftValname = newSyntax;
+                            data.tmpValue.name = newSyntax;
                             data.substList.RemoveAt(data.substList.Count - 2);
                             data.substList.RemoveAt(data.substList.Count - 1);
                         }
@@ -1331,10 +1341,10 @@ public partial class ReadText : MonoBehaviour
 	{
         ReadData.ARGUMENT_PASS_DATA apd = new ReadData.ARGUMENT_PASS_DATA();
         // 変数があるかチェック
-        if (CheckVarialbleData(data.substList[data.substList.Count - 1], out DataTableList.VARIABLE_DATA vd))
+        if (CheckVarialbleData(data.substList[data.substList.Count - 1], out VARIABLE_DATA vd))
         {
             // 配列の場合
-            if (vd.type == DataTableList.DATA_TYPE.ARRAY)
+            if (vd.type == VARIABLE_DATA.DATA_TYPE.ARRAY)
             {
                 if (CheckVarialbleData(vd.name, data.arrayCountList, out vd))
                 {
@@ -1376,10 +1386,11 @@ public partial class ReadText : MonoBehaviour
                     if (CheckVarialbleData(data.substList[data.substList.Count - 2]))
                     {
                         string tmpName = data.substList[data.substList.Count - 2];
-                        data.substList[data.substList.Count - 2] = (string)DataTable.GetVariableValueData(tmpName);
+                        DataTable.GetVariableValueData(tmpName, out VARIABLE_DATA vdata);
+                        data.substList[data.substList.Count - 2] = vdata.value.ToString();
                         data.substList.RemoveAt(data.substList.Count - 1);
                         tmp.Add(tmpName); tmp.Add(ope); tmp.Add("1");
-                        Substitution(tmp, tmpName, true);
+                        Substitution(tmp,ref data.leftValue, true);
                     }
                     result = true;
                 }
@@ -1424,21 +1435,25 @@ public partial class ReadText : MonoBehaviour
     
 
     // 変数宣言
-    static void VariableDeclaration(string name,string setMold)
+    static void VariableDeclaration(VARIABLE_DATA vData,ref VARIABLE_DATA returnData)
 	{
+        /*
         if(name != "" && setMold != "")
 		{
-            DataTableList.VARIABLE_DATA ValData = new DataTableList.VARIABLE_DATA() ;
+           VARIABLE_DATA ValData = newVARIABLE_DATA() ;
             ValData.name = name;
             ValData.mold = setMold;
             ValData.value = 0;
             ValData.scoopNum = data.allNestLevel;
 
             // 配列ONの場合
-            if (data.arrayFlag)         DataTable.AddVariableData(ValData, data.arrayCountList);
-            else if(data.structFlag)    DataTable.AddVariableData(ValData,data.structFlag);
-            else                        DataTable.AddVariableData(ValData);
+            if (data.arrayFlag)         DataTable.AddVariableData(vData, data.arrayCountList);
+            else if(data.structFlag)    DataTable.AddVariableData(vData, data.structFlag);
+            else                        DataTable.AddVariableData(vData);
         }
+        */
+        if (data.arrayFlag) DataTable.AddVariableData(vData, data.arrayCountList,ref returnData);
+        else DataTable.AddVariableData(vData, out returnData);
     }
 
     static void CheckVariableIsScoop(string name,int scoop)
@@ -1453,7 +1468,7 @@ public partial class ReadText : MonoBehaviour
 		}
 
     }
-    static void Substitution(List<string> list, string subName, bool flag = false)
+    static void Substitution(List<string> list,ref VARIABLE_DATA leftDataValue, bool flag = false)
 	{
         if(!flag)
 		{
@@ -1463,17 +1478,20 @@ public partial class ReadText : MonoBehaviour
         if (flag)
         {
             var val = arithmeticCheck.Check(list,out string mold);
+            DataTable.SetVarialbleData(ref leftDataValue, val, data.arrayCountList);
+            /*
             // 変数名チェック
             if (CheckVarialbleData(subName))
             {
                 DataTable.SetVarialbleData(subName, val, data.arrayCountList);
             }
+           
             // 引数のチェック
             else if (DataTable.SetFuncVarialbleData(data.funcName, subName, val))
             {
                 // 定義されていない変数に代入しようとしている
 
-            }
+            } */
         }
     }
 
@@ -1505,7 +1523,7 @@ public partial class ReadText : MonoBehaviour
             {
                 foreach(var data in DataTable.GetVarialbleDataList())
 				{
-                    if (data.type == DataTableList.DATA_TYPE.ARRAY)
+                    if (data.type == VARIABLE_DATA.DATA_TYPE.ARRAY)
 					{
                         var tmpListObj = Instantiate(tmpArrayListObj);
                         tmpListObj.transform.parent = tmpvTable.transform;
@@ -1619,7 +1637,7 @@ public partial class ReadText : MonoBehaviour
         return false;
 	}
 
-    static bool CheckVarialbleData(string val,out DataTableList.VARIABLE_DATA vd)
+    static bool CheckVarialbleData(string val,out VARIABLE_DATA vd)
 	{
         foreach(var data in  DataTable.GetVarialbleDataList())
 		{
@@ -1629,7 +1647,7 @@ public partial class ReadText : MonoBehaviour
                 return true;
 			}
 		}
-        vd = new DataTableList.VARIABLE_DATA();
+        vd = new VARIABLE_DATA();
         return false;
 	}
     static bool CheckVarialbleData(string val)
@@ -1644,7 +1662,7 @@ public partial class ReadText : MonoBehaviour
         return false;
     }
 
-    static bool CheckVarialbleData(string val,List<int> _arrayList,out DataTableList.VARIABLE_DATA vd)
+    static bool CheckVarialbleData(string val,List<int> _arrayList,out VARIABLE_DATA vd)
     {
         foreach (var data in DataTable.GetVarialbleDataList())
         {
@@ -1662,11 +1680,11 @@ public partial class ReadText : MonoBehaviour
 				}
             }
         }
-        vd = new DataTableList.VARIABLE_DATA();
+        vd = new VARIABLE_DATA();
         return false;
     }
 
-    static string GetArrayData(DataTableList.VARIABLE_DATA data,List<int>_arrayList)
+    static string GetArrayData(VARIABLE_DATA data,List<int>_arrayList)
 	{
         return (string)DataTable.GetOneArrayNumberData(data, _arrayList);
 	}

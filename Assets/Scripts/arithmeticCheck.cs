@@ -143,7 +143,8 @@ public class INT_Arithmetic
                     }
                     // 数字ではないので、変数
                     // すでに定義されている変数なのか
-                    object sv = DataTable.GetVariableValueData(substList[nowIndex]);
+                    DataTable.GetVariableValueData(substList[nowIndex], out VARIABLE_DATA vARIABLE_DATA);
+                    object sv = vARIABLE_DATA.value;
                     if (sv != null)
                     {
                         if(int.TryParse((string)sv,out int res))
@@ -309,7 +310,8 @@ public class DOUBLE_Arithmetic
                     }
                     // 数字ではないので、変数
                     // すでに定義されている変数なのか
-                    object sv = DataTable.GetVariableValueData(substList[nowIndex]);
+                    DataTable.GetVariableValueData(substList[nowIndex], out VARIABLE_DATA vARIABLE_DATA);
+                    object sv = vARIABLE_DATA.value;
                     if (sv != null)
                     {
                         value = (double)sv;
@@ -472,7 +474,8 @@ public class FLOAT_Arithmetic
                     }
                     // 数字ではないので、変数
                     // すでに定義されている変数なのか
-                    object sv = DataTable.GetVariableValueData(substList[nowIndex]);
+                    DataTable.GetVariableValueData(substList[nowIndex], out VARIABLE_DATA vARIABLE_DATA);
+                    object sv = vARIABLE_DATA.value ;
                     if (sv != null)
                     {
                         value = (float)sv;

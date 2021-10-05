@@ -164,7 +164,8 @@ public class ifcheck : MonoBehaviour
         else
         {
             // 定義済み変数かチェック
-            object val = DataTable.GetVariableValueData(substList[nowIndex]);
+            DataTable.GetVariableValueData(substList[nowIndex], out VARIABLE_DATA vARIABLE_DATA);
+            object val = vARIABLE_DATA.value;
             if (val != null)
             {
                 nowIndex++;
