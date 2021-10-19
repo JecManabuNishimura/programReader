@@ -284,6 +284,7 @@ public partial class ReadText : MonoBehaviour
         data.breakFlag = false;
         data.nextCaseFlag = false;
         data.argumentPass.Clear();
+        DataTable.SetResetItemFlag();
     }
 
     static public void InitializeData()
@@ -654,11 +655,7 @@ public partial class ReadText : MonoBehaviour
 							}
                             else
 							{
-                                // 変数宣言
-                                if (data.tmpValue.name != null && data.tmpValue.mold != null)
-                                {
-                                    VariableDeclaration(data.tmpValue,ref data.leftValue);
-                                }
+
                                 // 代入処理
                                 Substitution(data.substList, ref data.leftValue);
                             }
@@ -746,7 +743,11 @@ public partial class ReadText : MonoBehaviour
                             }
                             
                             else*/
-                            if (!int.TryParse(data.substList[data.substList.Count - 1], out int result))
+                            if (data.substitutionFlag || data.ifFlag || data.switchFlag)
+                            {
+                                data.substList.Add(newSyntax[i].ToString());
+                            }
+                            else if (!int.TryParse(data.substList[data.substList.Count - 1], out int result))
                             {
                                 if (CheckFunctionData(data.substList[data.substList.Count - 1], line, out DataTableList.FUNC_DATA func))
                                 {
@@ -759,10 +760,7 @@ public partial class ReadText : MonoBehaviour
                                     Debug.Log("関数はない:" + data.substList[data.substList.Count - 1]);
                                 }
                             }
-                            else if (data.substitutionFlag || data.ifFlag || data.switchFlag)
-                            {
-                                data.substList.Add(newSyntax[i].ToString());
-                            }
+                            
                             
                             
                         }
@@ -932,7 +930,17 @@ public partial class ReadText : MonoBehaviour
                         ScoopPop();
                         break;
                     case '=':
-                        data.leftValue = data.tmpValue;
+
+                        // 左辺が変数宣言ではなかった場合
+                        if(data.tmpValue.mold != null)
+						{
+                            data.leftValue = data.tmpValue;
+                            
+                            data.substList.RemoveAt(data.substList.Count - 1);
+                            data.tmpValue = new VARIABLE_DATA();
+                        }
+                        
+                        
                         if (data.skipFlag && data.skipNestLevel != -1)
                         {
                             // スキップされる行数を越した場合
@@ -954,7 +962,8 @@ public partial class ReadText : MonoBehaviour
                             // += -=　の場合
                             if (data.substList[data.substList.Count - 1] == "-" || data.substList[data.substList.Count - 1] == "+")
                             {
-                                data.leftValue.name = data.substList[data.substList.Count - 2];
+                                data.substList.RemoveAt(data.substList.Count - 2);
+                                data.substList.Insert(0, data.leftValue.value.ToString());
                             }
                         }
 
@@ -970,21 +979,24 @@ public partial class ReadText : MonoBehaviour
                         break;
 
                     case '+':
+                    case '-':
                         // インクリメントや、計算はfor文の時は最後のステップの時のみ
                         if ((data.loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
                             (!data.loopFlag) && !data.skipFlag)
                         {
                             if (data.substList.Count >= 1)
                             {
-                                if(SetOpeData(newSyntax[i].ToString()))
+                                if(SetOpeData(newSyntax[i].ToString(),out VARIABLE_DATA vARIABLE_DATA))
 								{
-                                    break;
+                                    data.leftValue = vARIABLE_DATA;
+                                    data.substitutionFlag = true;
+                                    continue;
 								}
                             }
                             data.substList.Add(newSyntax[i].ToString());
                         }
                         break;
-                    case '-':
+                   /* case '-':
                         if ((data.loopFlag && textGui.loopStepNumber == textGui.LOOP_NUMBER.NEXT) ||
                             (!data.loopFlag) && !data.skipFlag)
                         {
@@ -997,7 +1009,7 @@ public partial class ReadText : MonoBehaviour
                             }
                             data.substList.Add(newSyntax[i].ToString());
                         }
-                        break;
+                        break;}*/
                     case '[':
                         // 配列の場合
                         // (宣言）データ型＆変数名が定義されている場合のみ
@@ -1281,9 +1293,11 @@ public partial class ReadText : MonoBehaviour
                         if (CheckVarialbleData(newSyntax))
                         {
                             DataTable.SetVariableItemFlag(newSyntax);
-                            data.substList.RemoveAt(data.substList.Count - 2);
+                            data.substList.RemoveAt(data.substList.Count - 1);
                             DataTable.GetVariableValueData(newSyntax, out VARIABLE_DATA vARIABLE_DATA);
+
                             data.substList.Add(vARIABLE_DATA.value.ToString());
+                            
                         }
                     }
                 }
@@ -1300,15 +1314,16 @@ public partial class ReadText : MonoBehaviour
                     }
                     else
 					{
-                        data.substList.RemoveAt(data.substList.Count - 1);
+                        //data.substList.RemoveAt(data.substList.Count - 1);
                         if (!DataTable.GetVariableValueData(newSyntax, out data.tmpValue))
 						{
                             Debug.LogError("変数が宣言されていません。:" + newSyntax);
 						}
                         else
 						{
-                            data.leftValue = data.tmpValue;
-                            data.tmpValue = new VARIABLE_DATA();
+                            data.tmpValue.scoopNum = data.allNestLevel;
+                            //data.leftValue = data.tmpValue;
+                            //data.tmpValue = new VARIABLE_DATA();
                         }
                     }
                 }
@@ -1316,11 +1331,15 @@ public partial class ReadText : MonoBehaviour
                 {
                     if (!data.returnFlag)
                     {
-                        // 変数名が設定されていない場合
-                        if (data.tmpValue.name == null)
+                        // 変数宣言
+                        if (data.tmpValue.mold != null)
                         {
                             data.tmpValue.name = newSyntax;
-                            data.substList.RemoveAt(data.substList.Count - 2);
+                            VariableDeclaration(data.tmpValue, ref data.leftValue);
+                            data.leftValue.scoopNum = data.allNestLevel;
+                            data.tmpValue = new VARIABLE_DATA();
+
+                            data.substList.RemoveAt(data.substList.Count - 1);
                             data.substList.RemoveAt(data.substList.Count - 1);
                         }
                     }
@@ -1370,10 +1389,11 @@ public partial class ReadText : MonoBehaviour
     }
 
     // インクリメント対応
-    static bool SetOpeData(string ope)
+    static bool SetOpeData(string ope,out VARIABLE_DATA outData)
 	{
         // 後置の場合のみtrue
         bool result = false;
+        outData = new VARIABLE_DATA();
         // インクリメント対応
         if (ope == "+" || ope == "-")
         {
@@ -1383,14 +1403,11 @@ public partial class ReadText : MonoBehaviour
                 if (data.substList.Count >= 2)
                 {
                     // 後置型
-                    if (CheckVarialbleData(data.substList[data.substList.Count - 2]))
+                    if (DataTable.GetVariableValueData(data.substList[data.substList.Count - 2], out VARIABLE_DATA vdata))
                     {
-                        string tmpName = data.substList[data.substList.Count - 2];
-                        DataTable.GetVariableValueData(tmpName, out VARIABLE_DATA vdata);
+                        outData = vdata;
                         data.substList[data.substList.Count - 2] = vdata.value.ToString();
-                        data.substList.RemoveAt(data.substList.Count - 1);
-                        tmp.Add(tmpName); tmp.Add(ope); tmp.Add("1");
-                        Substitution(tmp,ref data.leftValue, true);
+                        data.substList.Add("1");
                     }
                     result = true;
                 }
@@ -1407,6 +1424,7 @@ public partial class ReadText : MonoBehaviour
                 result = false;
 			}
         }
+        
         return result;
     }
     
