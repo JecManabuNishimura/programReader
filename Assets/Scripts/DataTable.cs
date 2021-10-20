@@ -437,6 +437,16 @@ public static partial class DataTable
 		Debug.Log("w’è‚µ‚½•Ï”–¼‚Í‘¶İ‚µ‚È‚¢");
 	}
 
+	public static void SetResetItemFlag()
+	{
+		for(int i=0; i < variable.Count;i++)
+		{
+			VARIABLE_DATA data = variable[i];
+			data.selectItemFlag = false;
+			variable[i] = data;
+		}
+	}
+
 	public static int GetVariableNum()
 	{
 		return variable.Count;
