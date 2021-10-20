@@ -935,11 +935,9 @@ public partial class ReadText : MonoBehaviour
                         if(data.tmpValue.mold != null)
 						{
                             data.leftValue = data.tmpValue;
-<<<<<<< HEAD
-=======
-                            
+                     
                             data.substList.RemoveAt(data.substList.Count - 1);
->>>>>>> 029eab2adea128e09b100b382d4b0abd6a5b4ad3
+
                             data.tmpValue = new VARIABLE_DATA();
                         }
                         
@@ -1300,11 +1298,6 @@ public partial class ReadText : MonoBehaviour
                             DataTable.GetVariableValueData(newSyntax, out VARIABLE_DATA vARIABLE_DATA);
 
                             data.substList.Add(vARIABLE_DATA.value.ToString());
-<<<<<<< HEAD
-
-=======
-                            
->>>>>>> 029eab2adea128e09b100b382d4b0abd6a5b4ad3
                         }
                     }
                 }
@@ -1328,11 +1321,8 @@ public partial class ReadText : MonoBehaviour
 						}
                         else
 						{
-<<<<<<< HEAD
-                            
-=======
                             data.tmpValue.scoopNum = data.allNestLevel;
->>>>>>> 029eab2adea128e09b100b382d4b0abd6a5b4ad3
+
                             //data.leftValue = data.tmpValue;
                             //data.tmpValue = new VARIABLE_DATA();
                         }
@@ -1347,10 +1337,9 @@ public partial class ReadText : MonoBehaviour
                         {
                             data.tmpValue.name = newSyntax;
                             VariableDeclaration(data.tmpValue, ref data.leftValue);
-<<<<<<< HEAD
-=======
+
                             data.leftValue.scoopNum = data.allNestLevel;
->>>>>>> 029eab2adea128e09b100b382d4b0abd6a5b4ad3
+
                             data.tmpValue = new VARIABLE_DATA();
 
                             data.substList.RemoveAt(data.substList.Count - 1);
