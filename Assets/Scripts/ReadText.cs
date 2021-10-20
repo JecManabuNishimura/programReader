@@ -265,7 +265,16 @@ public partial class ReadText : MonoBehaviour
         "|","]","+",":","."
     };
 
-	static void ResetData()
+    public static readonly string[] cOverLoad = new string[]
+{
+        "+=",
+        "-=",
+        "/=",
+        "*=l",
+        "%="
+};
+
+    static void ResetData()
 	{
         fncData = new DataTableList.FUNC_DATA();
         fncData.getVariable = new List<VARIABLE_DATA>();
@@ -935,8 +944,15 @@ public partial class ReadText : MonoBehaviour
                         if(data.tmpValue.mold != null)
 						{
                             data.leftValue = data.tmpValue;
-                     
-                            data.substList.RemoveAt(data.substList.Count - 1);
+                            if (OverLoadCheck(data.substList[data.substList.Count - 1] + "="))
+							{
+                                data.substList.RemoveAt(data.substList.Count - 2);
+                            }
+                            else
+							{
+                                data.substList.RemoveAt(data.substList.Count - 1);
+                            }
+                            
 
                             data.tmpValue = new VARIABLE_DATA();
                         }
@@ -1735,6 +1751,16 @@ public partial class ReadText : MonoBehaviour
         foreach (var ch in symbol)
         {
             if (tex.IndexOf(ch) >= 0)
+                return true;
+        }
+        return false;
+    }
+
+    static bool OverLoadCheck(string tex)
+    {
+        foreach (var ch in cOverLoad)
+        {
+            if (tex == ch)
                 return true;
         }
         return false;
